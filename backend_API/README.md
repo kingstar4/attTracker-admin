@@ -268,18 +268,6 @@ The system uses 6 main tables:
 4. **Use JWT tokens**: Save the token from login response for subsequent requests
 5. **Check database**: Use `python database_setup.py info` to see current data
 
-## Production Deployment
-
-For production use:
-
-1. Change `FLASK_ENV=production` in `.env`
-2. Use a proper database (PostgreSQL/MySQL) instead of SQLite
-3. Set strong, unique values for `SECRET_KEY` and `JWT_SECRET_KEY`
-4. Configure proper email settings
-5. Add HTTPS/SSL termination
-6. Consider using Redis for rate limiting
-7. Add proper logging and monitoring
-
 ## Troubleshooting
 
 ### Common Issues
