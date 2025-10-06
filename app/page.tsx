@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import { AdminDashboard } from "@/features/dashboard/AdminDashboard"
+import { LandingPage } from "@/components/LandingPage";
 
 export default function HomePage() {
-  return <AdminDashboard />
+  return <LandingPage />;
 }

@@ -20,9 +20,9 @@ export function AttendanceKiosk() {
   const [selectedEmployee, setSelectedEmployee] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [lastAction, setLastAction] = useState<{
-    employee: string
-    action: string
-    timestamp: Date
+     employee: string
+     action: string
+     timestamp: string // ISO
   } | null>(null)
 
   const { employees, recordAttendance, getEmployeeStatus } = useAttendanceStore()
@@ -54,16 +54,18 @@ export function AttendanceKiosk() {
     const employee = employees.find((emp) => emp.id === selectedEmployee)
     if (!employee) return
 
+    const nowIso = new Date().toISOString()
+
     recordAttendance({
       employeeId: selectedEmployee,
       action,
-      timestamp: new Date(),
+      timestamp: nowIso,
     })
 
     setLastAction({
       employee: employee.name,
       action: action.replace("-", " "),
-      timestamp: new Date(),
+      timestamp: nowIso,
     })
 
     // Reset after 3 seconds
@@ -181,8 +183,7 @@ export function AttendanceKiosk() {
                     <div className="flex items-center gap-2 text-green-800 dark:text-green-200">
                       <CheckCircle className="h-5 w-5" />
                       <span className="font-medium">
-                        {lastAction.employee} - {lastAction.action} recorded at{" "}
-                        {lastAction.timestamp.toLocaleTimeString()}
+                        {lastAction.employee} - {lastAction.action} recorded at {new Date(lastAction.timestamp).toLocaleTimeString()}
                       </span>
                     </div>
                   </div>

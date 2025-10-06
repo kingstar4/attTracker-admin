@@ -7,7 +7,7 @@ interface Employee {
   name: string
   department: string
   status: "in" | "out" | "break"
-  lastAction: Date
+  lastAction: string
   fingerprintEnrolled: boolean
 }
 
@@ -67,11 +67,16 @@ export function DepartmentChart({ employees }: DepartmentChartProps) {
           <Legend
             verticalAlign="bottom"
             height={36}
-            formatter={(value, entry) => (
-              <span style={{ color: entry.color }}>
-                {value} ({entry.payload?.percentage}%)
-              </span>
-            )}
+            formatter={(value, entry) => {
+              const e: any = entry
+              const pct = e?.payload?.percentage
+              const color = e?.color
+              return (
+                <span style={{ color: color }}>
+                  {value} {pct !== undefined ? `(${pct}%)` : null}
+                </span>
+              )
+            }}
           />
         </PieChart>
       </ResponsiveContainer>

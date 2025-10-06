@@ -7,11 +7,8 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    unoptimized: true,
+    domains: [], // Add any external image domains you need
   },
-  output: 'export',
-  trailingSlash: true,
-  distDir: 'dist',
-}
+};
 
-export default nextConfig
+export default nextConfig;

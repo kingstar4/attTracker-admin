@@ -10,7 +10,7 @@ interface Employee {
   name: string
   department: string
   status: "in" | "out" | "break"
-  lastAction: Date
+  lastAction: string // ISO timestamp
   fingerprintEnrolled: boolean
 }
 

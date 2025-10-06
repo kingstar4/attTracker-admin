@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'; 
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
-import { Analytics } from '@vercel/analytics/next';
+// import { Analytics } from '@vercel/analytics/next';
 import { Providers } from './providers';
+import { AuthWrapper } from '@/components/AuthWrapper';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -17,8 +18,10 @@ export default function RootLayout({
 }) {
   return (
      <html lang="en" suppressHydrationWarning>
-     <body suppressHydrationWarning className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
-        <Providers>{children}</Providers>
+      <body suppressHydrationWarning className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
+        <Providers>
+          <AuthWrapper>{children}</AuthWrapper>
+        </Providers>
         {/* <Analytics /> */}
       </body>
     </html>

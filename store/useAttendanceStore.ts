@@ -5,7 +5,7 @@ interface Employee {
   name: string
   department: string
   status: "in" | "out" | "break"
-  lastAction: Date
+  lastAction: string // ISO timestamp
   fingerprintEnrolled: boolean
 }
 
@@ -13,7 +13,7 @@ interface AttendanceRecord {
   id: string
   employeeId: string
   action: "clock-in" | "clock-out" | "break-start" | "break-end"
-  timestamp: Date
+  timestamp: string // ISO timestamp
   location?: string
 }
 
@@ -33,13 +33,14 @@ interface AttendanceStore {
 }
 
 export const useAttendanceStore = create<AttendanceStore>((set, get) => ({
+  // Use static ISO timestamps to avoid generating different values on server vs client during module initialization
   employees: [
     {
       id: "1",
       name: "John Smith",
       department: "Construction",
       status: "out",
-      lastAction: new Date(),
+      lastAction: "2024-01-01T08:00:00.000Z",
       fingerprintEnrolled: true,
     },
     {
@@ -47,7 +48,7 @@ export const useAttendanceStore = create<AttendanceStore>((set, get) => ({
       name: "Sarah Johnson",
       department: "Safety",
       status: "in",
-      lastAction: new Date(),
+      lastAction: "2024-01-01T09:00:00.000Z",
       fingerprintEnrolled: true,
     },
     {
@@ -55,7 +56,7 @@ export const useAttendanceStore = create<AttendanceStore>((set, get) => ({
       name: "Mike Wilson",
       department: "Equipment",
       status: "break",
-      lastAction: new Date(),
+      lastAction: "2024-01-01T09:30:00.000Z",
       fingerprintEnrolled: false,
     },
   ],
