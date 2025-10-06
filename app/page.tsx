@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import { AdminDashboard } from "@/features/dashboard/AdminDashboard"
+import SupervisorPage from "./supervisor/page";
 
 export default function HomePage() {
-  return <AdminDashboard />
+  return <SupervisorPage />;
 }

@@ -11,35 +11,30 @@
       "static/chunks/main-app.js",
       "static/chunks/app/page.js"
     ],
-    "/attendance/page": [
+    "/supervisor/kiosk/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/attendance/page.js"
+      "static/chunks/app/supervisor/kiosk/page.js"
     ],
-    "/employees/page": [
+    "/supervisor/enrollment/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/employees/page.js"
+      "static/chunks/app/supervisor/enrollment/page.js"
     ],
-    "/kiosk/page": [
+    "/supervisor/employees/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/kiosk/page.js"
+      "static/chunks/app/supervisor/employees/page.js"
     ],
-    "/enrollment/page": [
+    "/supervisor/settings/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/enrollment/page.js"
+      "static/chunks/app/supervisor/settings/page.js"
     ],
-    "/settings/page": [
+    "/_not-found/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/settings/page.js"
-    ],
-    "/api/employees/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/employees/route.js"
+      "static/chunks/app/_not-found/page.js"
     ]
   }
 }

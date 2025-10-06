@@ -1,8 +1,8 @@
 {
-  "/api/employees/route": "app/api/employees/route.js",
+  "/_not-found/page": "app/_not-found/page.js",
   "/page": "app/page.js",
-  "/enrollment/page": "app/enrollment/page.js",
-  "/employees/page": "app/employees/page.js",
-  "/kiosk/page": "app/kiosk/page.js",
-  "/settings/page": "app/settings/page.js"
+  "/supervisor/kiosk/page": "app/supervisor/kiosk/page.js",
+  "/supervisor/enrollment/page": "app/supervisor/enrollment/page.js",
+  "/supervisor/employees/page": "app/supervisor/employees/page.js",
+  "/supervisor/settings/page": "app/supervisor/settings/page.js"
 }
