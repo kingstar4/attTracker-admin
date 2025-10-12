@@ -8,12 +8,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useEmployeeStore } from "@/store/employee-store";
+import { useEmployeeModuleStore } from "@/store/useEmployeeModuleStore";
 import { cn } from "@/lib/utils";
 import { History, Calendar, Clock, FileText } from "lucide-react";
 
 export function LeaveRequestHistory() {
-  const { leaveRequests } = useEmployeeStore();
+  const { leaveRequests } = useEmployeeModuleStore();
 
   const getStatusColor = (status: string) => {
     switch (status) {

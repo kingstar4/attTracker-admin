@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useEmployeeStore } from "@/store/employee-store";
+import { useEmployeeModuleStore } from "@/store/useEmployeeModuleStore";
 import { useToast } from "@/hooks/use-toast";
 import { CalendarClock, Send } from "lucide-react";
 
@@ -41,7 +41,7 @@ export function LeaveRequestForm() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { addLeaveRequest } = useEmployeeStore();
+  const { addLeaveRequest } = useEmployeeModuleStore();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {

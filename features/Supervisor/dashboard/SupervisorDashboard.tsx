@@ -12,6 +12,7 @@ import {
 import { useAttendanceStore } from "@/store/useAttendanceStore";
 import { AttendanceChart } from "./components/AttendanceChart";
 import { DepartmentChart } from "./components/DepartmentChart";
+import { StatusPieChart } from "./components/StatusPieChart";
 import { RecentActivity } from "./components/RecentActivity";
 import { EmployeeStatusList } from "./components/EmployeeStatusList";
 import { QuickActions } from "./components/QuickActions";
@@ -170,6 +171,9 @@ export function SupervisorDashboard() {
 
           {/* Employee Status */}
           <EmployeeStatusList />
+
+          {/* Status Pie */}
+          <StatusPieChart />
 
           <Card>
             <CardHeader>

@@ -1,0 +1,236 @@
+/* Landing page custom properties */
+.landing-page {
+  --hero-gradient: linear-gradient(
+    45deg,
+    hsl(var(--primary)) 0%,
+    hsl(var(--secondary)) 50%,
+    hsl(var(--accent)) 100%
+  );
+  --section-gradient: linear-gradient(
+    180deg,
+    hsl(var(--background)) 0%,
+    hsl(var(--muted)) 100%
+  );
+  --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --hover-transform: translateY(-2px);
+  --button-gradient: linear-gradient(
+    45deg,
+    hsl(var(--primary)) 0%,
+    hsl(var(--secondary)) 100%
+  );
+  --text-gradient: linear-gradient(
+    to right,
+    hsl(var(--accent)) 0%,
+    hsl(var(--secondary)) 100%
+  );
+  --hover-overlay: linear-gradient(
+    45deg,
+    hsl(var(--primary)) 0%,
+    hsl(var(--primary) / 0.8) 50%,
+    hsl(var(--primary)) 100%
+  );
+}
+
+/* Hero section */
+.landing-page .hero-section {
+  position: relative;
+  min-height: 100vh;
+  background: linear-gradient(
+    to bottom right,
+    hsl(var(--background)) 0%,
+    hsl(var(--accent) / 0.1) 100%
+  );
+  overflow: hidden;
+}
+
+.landing-page .hero-content {
+  position: relative;
+  z-index: 10;
+  padding: 8rem 1rem;
+}
+
+.landing-page .hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  background-color: hsl(var(--accent) / 0.1);
+  border: 1px solid hsl(var(--accent) / 0.2);
+  margin-bottom: 2rem;
+  color: hsl(var(--foreground));
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.landing-page .gradient-text {
+  background: var(--text-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: inline-block;
+}
+
+.landing-page .hero-button {
+  position: relative;
+  overflow: hidden;
+  background: var(--button-gradient);
+  transition: all 0.3s ease;
+}
+
+.landing-page .hero-button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--hover-overlay);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.landing-page .hero-button:hover::after {
+  opacity: 1;
+}
+
+/* Features section */
+.landing-page .features-section {
+  background: var(--section-gradient);
+  padding: 6rem 0;
+}
+
+.landing-page .feature-card {
+  position: relative;
+  padding: 2rem;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  transition: all 0.3s ease;
+}
+
+.landing-page .feature-card:hover {
+  transform: var(--hover-transform);
+  border-color: hsl(var(--primary));
+}
+
+.landing-page .feature-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.75rem;
+  background: hsl(var(--primary) / 0.1);
+  color: hsl(var(--primary));
+  margin-bottom: 1rem;
+}
+
+/* Testimonials section */
+.landing-page .testimonials-section {
+  background: hsl(var(--background));
+  padding: 6rem 0;
+}
+
+.landing-page .testimonial-card {
+  padding: 2rem;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+}
+
+.landing-page .testimonial-avatar {
+  width: 4rem;
+  height: 4rem;
+  border-radius: 9999px;
+  margin-bottom: 1rem;
+}
+
+/* Pricing section */
+.landing-page .pricing-section {
+  background: var(--section-gradient);
+  padding: 6rem 0;
+}
+
+.landing-page .pricing-card {
+  padding: 2rem;
+  background: hsl(var(--card));
+  border: 2px solid hsl(var(--border));
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  transition: all 0.3s ease;
+}
+
+.landing-page .pricing-card:hover {
+  transform: var(--hover-transform);
+  border-color: hsl(var(--primary));
+}
+
+.landing-page .pricing-card.featured {
+  border-color: hsl(var(--primary));
+  background: linear-gradient(
+    to bottom right,
+    hsl(var(--card)),
+    hsl(var(--background))
+  );
+}
+
+/* Contact section */
+.landing-page .contact-section {
+  background: hsl(var(--background));
+  padding: 6rem 0;
+}
+
+/* Footer */
+.landing-page .footer {
+  background: hsl(var(--muted));
+  padding: 4rem 0;
+  border-top: 1px solid hsl(var(--border));
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.landing-page .animate-fade-in {
+  animation: fadeIn 0.6s ease-out forwards;
+}
+
+.landing-page .animate-delay-100 {
+  animation-delay: 100ms;
+}
+.landing-page .animate-delay-200 {
+  animation-delay: 200ms;
+}
+.landing-page .animate-delay-300 {
+  animation-delay: 300ms;
+}
+
+/* Utility classes */
+.landing-page .gradient-text {
+  background: var(--hero-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .landing-page .hero-content {
+    padding: 4rem 1rem;
+  }
+
+  .landing-page .feature-card,
+  .landing-page .testimonial-card,
+  .landing-page .pricing-card {
+    margin-bottom: 1rem;
+  }
+}

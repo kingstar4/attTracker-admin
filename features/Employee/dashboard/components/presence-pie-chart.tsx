@@ -1,30 +1,54 @@
-"use client"
+"use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, PieLabelRenderProps } from "recharts"
-import { useEmployeeStore } from "@/store/employee-store"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  Legend,
+  PieLabelRenderProps,
+} from "recharts";
+import { useEmployeeModuleStore } from "@/store/useEmployeeModuleStore";
 
 export function PresencePieChart() {
-  const { attendanceRecords } = useEmployeeStore()
+  const { attendanceRecords } = useEmployeeModuleStore();
 
   // Calculate presence data
-  const presentCount = attendanceRecords.filter((record) => record.status === "present").length
-  const absentCount = attendanceRecords.filter((record) => record.status === "absent").length
-  const lateCount = attendanceRecords.filter((record) => record.status === "late").length
-  const leaveCount = attendanceRecords.filter((record) => record.status === "leave").length
+  const presentCount = attendanceRecords.filter(
+    (record) => record.status === "present"
+  ).length;
+  const absentCount = attendanceRecords.filter(
+    (record) => record.status === "absent"
+  ).length;
+  const lateCount = attendanceRecords.filter(
+    (record) => record.status === "late"
+  ).length;
+  const leaveCount = attendanceRecords.filter(
+    (record) => record.status === "leave"
+  ).length;
 
   const data = [
     { name: "Present", value: presentCount, color: "hsl(var(--present))" },
     { name: "Absent", value: absentCount, color: "hsl(var(--absent))" },
     { name: "Late", value: lateCount, color: "hsl(var(--late))" },
     { name: "Leave", value: leaveCount, color: "hsl(var(--leave))" },
-  ].filter((item) => item.value > 0)
+  ].filter((item) => item.value > 0);
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Attendance Summary</CardTitle>
-        <CardDescription>Distribution of your attendance status</CardDescription>
+        <CardDescription>
+          Distribution of your attendance status
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
@@ -52,5 +76,5 @@ export function PresencePieChart() {
         </ResponsiveContainer>
       </CardContent>
     </Card>
-  )
+  );
 }

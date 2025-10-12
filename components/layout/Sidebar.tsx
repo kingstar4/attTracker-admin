@@ -15,23 +15,14 @@ interface SidebarProps {
 }
 
 export function Sidebar({ open, onClose, isMobile }: SidebarProps) {
-  const pathname = usePathname();
   const { role } = useUserStore(); // "owner" | "supervisor" | "employee"
 
-  // Fallback: infer role from the current route if not set in store
-  const inferredRole =
-    !role && pathname?.startsWith("/roles/")
-      ? pathname.startsWith("/owner")
-        ? "owner"
-        : pathname.startsWith("/supervisor")
-          ? "supervisor"
-          : pathname.startsWith("/employee")
-            ? "employee"
-            : null
-      : null;
-
-  const effectiveRole = role ?? inferredRole;
-  const navItems = effectiveRole ? navigation[effectiveRole] : [];
+  // Null Check for role
+  if (role) {
+    const navItems = navigation[role];
+    console.log(navItems);
+  }
+  const navItems = role ? navigation[role] : [];
 
   if (isMobile) {
     return (

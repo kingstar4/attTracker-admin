@@ -1,22 +1,23 @@
-@import 'tailwindcss';
-@import 'tw-animate-css';
+@import "tailwindcss";
+@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  /* WorkTrackr Theme - Construction Industry Colors */
+  --background: oklch(1 0 0); /* Off-white */
+  --foreground: oklch(0.145 0 0); /* Deep navy blue */
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  --primary: oklch(0.205 0 0); /* Deep blue */
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
+  --secondary: oklch(0.97 0 0); /* Construction orange */
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
+  --accent: oklch(0.97 0 0); /* Orange accent */
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.577 0.245 27.325);
@@ -40,15 +41,16 @@
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
+  /* Dark mode - Premium dark theme */
+  --background: oklch(0.145 0 0); /* Deep dark blue */
+  --foreground: oklch(0.985 0 0); /* Off-white */
   --card: oklch(0.145 0 0);
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.145 0 0);
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.985 0 0);
   --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
+  --secondary: oklch(0.269 0 0); /* Construction orange */
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
@@ -122,4 +124,28 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Custom gradient for buttons */
+.gradient-button {
+  background: linear-gradient(
+    135deg,
+    oklch(0.72 0.15 45) 0%,
+    oklch(0.65 0.18 35) 100%
+  );
+  transition: all 0.3s ease;
+}
+
+.gradient-button:hover {
+  background: linear-gradient(
+    135deg,
+    oklch(0.78 0.18 45) 0%,
+    oklch(0.72 0.2 35) 100%
+  );
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px -10px oklch(0.72 0.15 45 / 0.5);
 }
