@@ -7,9 +7,11 @@ export type InvitationRole = "supervisor" | "employee"
 
 export interface Invitation {
   id: string
-  firstName?: string
-  lastName?: string
+  first_name?: string
+  last_name?: string
   email: string
+  phone_number?: string
+  address?: string
   role: InvitationRole
   projectName?: string | null
   sentAt: string
@@ -22,11 +24,11 @@ interface InvitationState {
   error: string | null
   fetchInvites: () => Promise<void>
   sendInvite: (payload: {
-    firstName: string
-    lastName: string
     email: string
-    role: InvitationRole
-    projectId?: string | null
+    first_name: string
+    last_name: string
+    phone_number: string
+    address: string
   }) => Promise<void>
   revokeInvite: (id: string) => Promise<void>
   resendInvite: (id: string) => Promise<void>
@@ -56,11 +58,11 @@ export const useInvitationStore = create<InvitationState>((set, get) => ({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          firstName: payload.firstName,
-          lastName: payload.lastName,
           email: payload.email,
-          role: payload.role,
-          projectId: payload.projectId ?? null,
+          first_name: payload.first_name,
+          last_name: payload.last_name,
+          phone_number: payload.phone_number,
+          address: payload.address,
         }),
       })
       if (!res.ok) throw new Error("Failed to send invitation")

@@ -57,7 +57,7 @@ export function InvitationsList() {
           <TableBody>
             {invites.map((inv) => (
               <TableRow key={inv.id}>
-                <TableCell>{[inv.firstName, inv.lastName].filter(Boolean).join(" ") || "—"}</TableCell>
+                <TableCell>{[inv.first_name, inv.last_name].filter(Boolean).join(" ") || "—"}</TableCell>
                 <TableCell>{inv.email}</TableCell>
                 <TableCell className="capitalize">{inv.role}</TableCell>
                 <TableCell>{inv.projectName || "—"}</TableCell>

@@ -23,12 +23,10 @@ interface AuthState {
   // Demo async actions (stub) — replace with real API calls
   login: (email: string, password: string, remember?: boolean) => Promise<AuthUser>
   signupOwner: (data: {
-    firstName: string
-    lastName: string
-    companyName: string
-    companyEmail: string
-    phone: string
-    password: string
+    organization_name: string
+    owner_email: string
+    owner_password: string
+    description: string
   }) => Promise<AuthUser>
 }
 
@@ -79,10 +77,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await new Promise((r) => setTimeout(r, 800))
       const user: AuthUser = {
         id: "owner-" + Math.random().toString(36).slice(2),
-        email: data.companyEmail,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        companyName: data.companyName,
+        email: data.owner_email,
+        companyName: data.organization_name,
         role: "owner",
         token: "mock-jwt-token",
       }

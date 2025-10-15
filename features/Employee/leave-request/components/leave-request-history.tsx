@@ -28,17 +28,7 @@ export function LeaveRequestHistory() {
     }
   };
 
-  const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  const formatSubmittedDate = (dateString: string) => {
+  const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
@@ -74,14 +64,16 @@ export function LeaveRequestHistory() {
                 <thead>
                   <tr className="border-b">
                     <th className="text-left py-3 px-4 font-medium">
-                      Submitted
+                      Start Date
+                    </th>
+                    <th className="text-left py-3 px-4 font-medium">
+                      End Date
                     </th>
                     <th className="text-left py-3 px-4 font-medium">Reason</th>
-                    <th className="text-left py-3 px-4 font-medium">
-                      Leave Time
-                    </th>
                     <th className="text-left py-3 px-4 font-medium">Status</th>
-                    <th className="text-left py-3 px-4 font-medium">Details</th>
+                    <th className="text-left py-3 px-4 font-medium">
+                      Submitted
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -90,17 +82,17 @@ export function LeaveRequestHistory() {
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-muted-foreground" />
-                          {formatSubmittedDate(request.submittedAt)}
+                          {formatDate(request.start_date)}
                         </div>
-                      </td>
-                      <td className="py-4 px-4 font-medium">
-                        {request.reason}
                       </td>
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-muted-foreground" />
-                          {formatDateTime(request.expectedLeaveTime)}
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          {formatDate(request.end_date)}
                         </div>
+                      </td>
+                      <td className="py-4 px-4 font-medium max-w-xs truncate">
+                        {request.reason}
                       </td>
                       <td className="py-4 px-4">
                         <Badge
@@ -109,11 +101,13 @@ export function LeaveRequestHistory() {
                             getStatusColor(request.status)
                           )}
                         >
-                          {request.status}
+                          <span className="text-muted-foreground">
+                            {request.status}
+                          </span>
                         </Badge>
                       </td>
-                      <td className="py-4 px-4 text-sm text-muted-foreground max-w-xs truncate">
-                        {request.details || "-"}
+                      <td className="py-4 px-4 text-sm text-muted-foreground">
+                        {formatDate(request.submittedAt)}
                       </td>
                     </tr>
                   ))}
@@ -129,7 +123,6 @@ export function LeaveRequestHistory() {
                   className="border rounded-lg p-4 space-y-3"
                 >
                   <div className="flex items-center justify-between">
-                    <h4 className="font-medium">{request.reason}</h4>
                     <Badge
                       className={cn(
                         "capitalize",
@@ -144,22 +137,18 @@ export function LeaveRequestHistory() {
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Calendar className="h-4 w-4" />
                       <span>
-                        Submitted: {formatSubmittedDate(request.submittedAt)}
+                        {formatDate(request.start_date)} -{" "}
+                        {formatDate(request.end_date)}
                       </span>
+                    </div>
+                    <div className="text-sm">
+                      <strong>Reason:</strong> {request.reason}
                     </div>
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Clock className="h-4 w-4" />
-                      <span>
-                        Leave: {formatDateTime(request.expectedLeaveTime)}
-                      </span>
+                      <span>Submitted: {formatDate(request.submittedAt)}</span>
                     </div>
                   </div>
-
-                  {request.details && (
-                    <div className="text-sm text-muted-foreground">
-                      <strong>Details:</strong> {request.details}
-                    </div>
-                  )}
                 </div>
               ))}
             </div>

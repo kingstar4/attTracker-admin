@@ -10,11 +10,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useAuth } from "@/components/AuthWrapper";
 
 export function AdminMenu() {
-  const { logout } = useAuth();
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -34,7 +31,7 @@ export function AdminMenu() {
           <span>Account Settings</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={logout}>
+        <DropdownMenuItem>
           <LogOut className="mr-2 h-4 w-4" />
           <span>Log out</span>
         </DropdownMenuItem>

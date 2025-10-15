@@ -3,7 +3,16 @@
 import type React from "react";
 
 import { useState } from "react";
+import { format } from "date-fns";
+import { Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+interface LeaveRequestFormData {
+  start_date: Date | undefined;
+  end_date: Date | undefined;
+  reason: string;
+}
+import { Calendar } from "@/components/ui/calendar";
 import {
   Card,
   CardContent,
@@ -11,33 +20,23 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { useEmployeeModuleStore } from "@/store/useEmployeeModuleStore";
 import { useToast } from "@/hooks/use-toast";
 import { CalendarClock, Send } from "lucide-react";
 
-const leaveReasons = [
-  "Medical appointment",
-  "Family emergency",
-  "Site visit off-location",
-  "Personal (short)",
-  "Other",
-];
-
 export function LeaveRequestForm() {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<LeaveRequestFormData>({
+    start_date: undefined,
+    end_date: undefined,
     reason: "",
-    expectedLeaveTime: "",
-    details: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -47,10 +46,24 @@ export function LeaveRequestForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.reason || !formData.expectedLeaveTime) {
+    if (!formData.start_date || !formData.end_date || !formData.reason.trim()) {
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate that end_date is not before start_date
+    if (
+      formData.end_date &&
+      formData.start_date &&
+      formData.end_date < formData.start_date
+    ) {
+      toast({
+        title: "Validation Error",
+        description: "End date cannot be before start date.",
         variant: "destructive",
       });
       return;
@@ -64,9 +77,9 @@ export function LeaveRequestForm() {
 
       const newRequest = {
         id: Date.now().toString(),
+        start_date: formData.start_date?.toISOString() ?? "",
+        end_date: formData.end_date?.toISOString() ?? "",
         reason: formData.reason,
-        expectedLeaveTime: formData.expectedLeaveTime,
-        details: formData.details,
         status: "pending" as const,
         submittedAt: new Date().toISOString(),
       };
@@ -80,9 +93,9 @@ export function LeaveRequestForm() {
 
       // Reset form
       setFormData({
+        start_date: undefined,
+        end_date: undefined,
         reason: "",
-        expectedLeaveTime: "",
-        details: "",
       });
     } catch (error) {
       toast({
@@ -95,7 +108,10 @@ export function LeaveRequestForm() {
     }
   };
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (
+    field: keyof LeaveRequestFormData,
+    value: Date | string
+  ) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
@@ -116,57 +132,96 @@ export function LeaveRequestForm() {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Reason Selection */}
+          {/* Start Date */}
+          <div className="space-y-2">
+            <Label htmlFor="start_date">
+              Start Date <span className="text-destructive">*</span>
+            </Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !formData.start_date && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {formData.start_date ? (
+                    format(formData.start_date, "PPP")
+                  ) : (
+                    <span>Pick a date</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={formData.start_date}
+                  onSelect={(date: Date | undefined) =>
+                    handleInputChange("start_date", date as Date)
+                  }
+                  initialFocus
+                  disabled={(date) => date < new Date()}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* End Date */}
+          <div className="space-y-2">
+            <Label htmlFor="end_date">
+              End Date <span className="text-destructive">*</span>
+            </Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !formData.end_date && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {formData.end_date ? (
+                    format(formData.end_date, "PPP")
+                  ) : (
+                    <span>Pick a date</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={formData.end_date}
+                  onSelect={(date: Date | undefined) =>
+                    handleInputChange("end_date", date as Date)
+                  }
+                  initialFocus
+                  disabled={(date) =>
+                    date < new Date() ||
+                    (formData.start_date ? date < formData.start_date : false)
+                  }
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Reason */}
           <div className="space-y-2">
             <Label htmlFor="reason">
               Reason <span className="text-destructive">*</span>
             </Label>
-            <Select
-              value={formData.reason}
-              onValueChange={(value) => handleInputChange("reason", value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select a reason for your leave" />
-              </SelectTrigger>
-              <SelectContent>
-                {leaveReasons.map((reason) => (
-                  <SelectItem key={reason} value={reason}>
-                    {reason}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Expected Leave Time */}
-          <div className="space-y-2">
-            <Label htmlFor="expectedLeaveTime">
-              Expected Leave Time <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="expectedLeaveTime"
-              type="datetime-local"
-              value={formData.expectedLeaveTime}
-              onChange={(e) =>
-                handleInputChange("expectedLeaveTime", e.target.value)
-              }
-              min={new Date().toISOString().slice(0, 16)}
-            />
-          </div>
-
-          {/* Additional Details */}
-          <div className="space-y-2">
-            <Label htmlFor="details">Additional Details</Label>
             <Textarea
-              id="details"
-              placeholder="Provide any additional information about your leave request..."
-              value={formData.details}
-              onChange={(e) => handleInputChange("details", e.target.value)}
+              id="reason"
+              placeholder="Family vacation"
+              value={formData.reason}
+              onChange={(e) => handleInputChange("reason", e.target.value)}
               maxLength={500}
               rows={4}
             />
             <div className="text-xs text-muted-foreground text-right">
-              {formData.details.length}/500 characters
+              {formData.reason.length}/500 characters
             </div>
           </div>
 

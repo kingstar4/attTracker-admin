@@ -2,30 +2,39 @@ import { z } from "zod"
 
 export interface Employee {
   id: string
-  name: string
+  first_name: string
+  last_name: string
   email: string
-  phone: string
+  phone_number: string
   address: string
   nin: string
+  emergency_contact_name: string
+  emergency_contact_phone: string
   status: "active" | "inactive"
   createdAt: string
   updatedAt: string
 }
 
 export interface CreateEmployeeDto {
-  name: string
   email: string
-  phone: string
-  address: string
+  first_name: string
+  last_name: string
   nin: string
+  phone_number: string
+  address: string
+  emergency_contact_name: string
+  emergency_contact_phone: string
 }
 
 export const employeeFormSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
-  phone: z.string().min(11, "Phone number must be at least 11 digits"),
+  first_name: z.string().min(2, "First name must be at least 2 characters"),
+  last_name: z.string().min(2, "Last name must be at least 2 characters"),
+  nin: z.string().min(10, "NIN must be at least 10 characters"),
+  phone_number: z.string().min(10, "Phone number must be at least 10 digits"),
   address: z.string().min(5, "Address must be at least 5 characters"),
-  nin: z.string().length(11, "NIN must be exactly 11 digits"),
+  emergency_contact_name: z.string().min(2, "Emergency contact name must be at least 2 characters"),
+  emergency_contact_phone: z.string().min(10, "Emergency contact phone must be at least 10 digits"),
 })
 
 export interface PasswordSetup {

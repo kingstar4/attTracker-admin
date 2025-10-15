@@ -22,9 +22,9 @@ export interface AttendanceRecord {
 
 export interface LeaveRequest {
   id: string
+  start_date: string
+  end_date: string
   reason: string
-  expectedLeaveTime: string
-  details?: string
   status: "pending" | "approved" | "rejected"
   submittedAt: string
 }
@@ -82,9 +82,9 @@ export const useEmployeeModuleStore = create<EmployeeState>()(
       leaveRequests: [
         {
           id: "1",
-          reason: "Medical appointment",
-          expectedLeaveTime: "2024-01-20T14:00",
-          details: "Doctor appointment",
+          start_date: "2024-02-01",
+          end_date: "2024-02-03",
+          reason: "Family vacation",
           status: "approved",
           submittedAt: "2024-01-18T10:00",
         },

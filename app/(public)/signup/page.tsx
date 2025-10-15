@@ -24,18 +24,16 @@ const passwordSchema = z
 
 const signupSchema = z
   .object({
-    firstName: z.string().min(2, "First name is too short"),
-    lastName: z.string().min(2, "Last name is too short"),
-    companyName: z.string().min(2, "Company name is too short"),
-    companyEmail: z.string().email("Enter a valid email"),
-    phone: z.string().regex(/^[0-9]{10,15}$/, "Enter 10–15 digits only"),
-    password: passwordSchema,
-    confirmPassword: z.string(),
+    organization_name: z.string().min(2, "Organization name is too short"),
+    owner_email: z.string().email("Enter a valid email"),
+    owner_password: passwordSchema,
+    confirm_owner_password: z.string(),
+    description: z.string().min(10, "Description must be at least 10 characters"),
     terms: z.literal<boolean>(true, { errorMap: () => ({ message: "Accept Terms and Conditions" }) }),
   })
-  .refine((data) => data.password === data.confirmPassword, {
+  .refine((data) => data.owner_password === data.confirm_owner_password, {
     message: "Passwords must match",
-    path: ["confirmPassword"],
+    path: ["confirm_owner_password"],
   })
 
 type SignupValues = z.infer<typeof signupSchema>
@@ -50,13 +48,11 @@ export default function OwnerSignupPage() {
   const form = useForm<SignupValues>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
-      firstName: "",
-      lastName: "",
-      companyName: "",
-      companyEmail: "",
-      phone: "",
-      password: "",
-      confirmPassword: "",
+      organization_name: "",
+      owner_email: "",
+      owner_password: "",
+      confirm_owner_password: "",
+      description: "",
       terms: false,
     },
     mode: "onTouched",
@@ -65,12 +61,10 @@ export default function OwnerSignupPage() {
   const onSubmit = async (values: SignupValues) => {
     try {
       await signupOwner({
-        firstName: values.firstName,
-        lastName: values.lastName,
-        companyName: values.companyName,
-        companyEmail: values.companyEmail,
-        phone: values.phone,
-        password: values.password,
+        organization_name: values.organization_name,
+        owner_email: values.owner_email,
+        owner_password: values.owner_password,
+        description: values.description,
       })
       toast({ title: "Welcome!", description: "Organization created successfully." })
       router.push("/roles/owner/dashboard")
@@ -88,43 +82,42 @@ export default function OwnerSignupPage() {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <FormField
-              control={form.control}
-              name="firstName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>First name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="John" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="lastName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Last name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Doe" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+          <FormField
+            control={form.control}
+            name="organization_name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Organization name</FormLabel>
+                <FormControl>
+                  <Input placeholder="My Company" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
           <FormField
             control={form.control}
-            name="companyName"
+            name="owner_email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Company name</FormLabel>
+                <FormLabel>Owner email</FormLabel>
                 <FormControl>
-                  <Input placeholder="Acme Construction" {...field} />
+                  <Input type="email" placeholder="owner@mycompany.com" autoComplete="email" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Description</FormLabel>
+                <FormControl>
+                  <Input placeholder="My construction company" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -134,37 +127,7 @@ export default function OwnerSignupPage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField
               control={form.control}
-              name="companyEmail"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Company email</FormLabel>
-                  <FormControl>
-                    <Input type="email" placeholder="owner@company.com" autoComplete="email" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Phone</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g. 2348012345678" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <FormField
-              control={form.control}
-              name="password"
+              name="owner_password"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Password</FormLabel>
@@ -188,7 +151,7 @@ export default function OwnerSignupPage() {
 
             <FormField
               control={form.control}
-              name="confirmPassword"
+              name="confirm_owner_password"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Confirm password</FormLabel>

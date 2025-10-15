@@ -9,7 +9,13 @@ import Link from "next/link";
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const { isDarkMode, toggleDarkMode } = useLandingPageStore();
+
+  // Handle hydration
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -19,13 +25,16 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Apply theme to document
   useEffect(() => {
+    if (!mounted) return;
+    
     if (isDarkMode) {
       document.documentElement.classList.add("dark");
     } else {
       document.documentElement.classList.remove("dark");
     }
-  }, [isDarkMode]);
+  }, [isDarkMode, mounted]);
 
   const navLinks = [
     { label: "Features", href: "#features" },
@@ -67,17 +76,19 @@ export function Navbar() {
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-4">
-            <button
-              onClick={toggleDarkMode}
-              className="w-10 h-10 rounded-lg hover:bg-muted flex items-center justify-center transition-colors"
-              aria-label="Toggle theme"
-            >
-              {isDarkMode ? (
-                <Sun className="w-5 h-5" />
-              ) : (
-                <Moon className="w-5 h-5" />
-              )}
-            </button>
+            {mounted && (
+              <button
+                onClick={toggleDarkMode}
+                className="w-10 h-10 rounded-lg hover:bg-muted flex items-center justify-center transition-colors"
+                aria-label="Toggle theme"
+              >
+                {isDarkMode ? (
+                  <Sun className="w-5 h-5" />
+                ) : (
+                  <Moon className="w-5 h-5" />
+                )}
+              </button>
+            )}
             <Button variant="ghost" className="font-semibold" asChild>
               <Link href="/login">Login</Link>
             </Button>
@@ -117,16 +128,18 @@ export function Navbar() {
                 </a>
               ))}
               <div className="flex items-center gap-4 pt-4 border-t border-border">
-                <button
-                  onClick={toggleDarkMode}
-                  className="w-10 h-10 rounded-lg hover:bg-muted flex items-center justify-center transition-colors"
-                >
-                  {isDarkMode ? (
-                    <Sun className="w-5 h-5" />
-                  ) : (
-                    <Moon className="w-5 h-5" />
-                  )}
-                </button>
+                {mounted && (
+                  <button
+                    onClick={toggleDarkMode}
+                    className="w-10 h-10 rounded-lg hover:bg-muted flex items-center justify-center transition-colors"
+                  >
+                    {isDarkMode ? (
+                      <Sun className="w-5 h-5" />
+                    ) : (
+                      <Moon className="w-5 h-5" />
+                    )}
+                  </button>
+                )}
                 {/* Login Button */}
                 <Button variant="ghost" asChild>
                   <Link href="/login">Login</Link>

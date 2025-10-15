@@ -51,6 +51,7 @@ export function EmployeeList() {
             <TableHead>Email</TableHead>
             <TableHead>Phone</TableHead>
             <TableHead>NIN</TableHead>
+            <TableHead>Emergency Contact</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="w-[60px]"></TableHead>
           </TableRow>
@@ -58,10 +59,16 @@ export function EmployeeList() {
         <TableBody>
           {employees.map((employee) => (
             <TableRow key={employee.id}>
-              <TableCell>{employee.name}</TableCell>
+              <TableCell>{`${employee.first_name} ${employee.last_name}`}</TableCell>
               <TableCell>{employee.email}</TableCell>
-              <TableCell>{employee.phone}</TableCell>
+              <TableCell>{employee.phone_number}</TableCell>
               <TableCell>{employee.nin}</TableCell>
+              <TableCell>
+                <div className="text-sm">
+                  <div>{employee.emergency_contact_name}</div>
+                  <div className="text-muted-foreground">{employee.emergency_contact_phone}</div>
+                </div>
+              </TableCell>
               <TableCell>
                 <span
                   className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${

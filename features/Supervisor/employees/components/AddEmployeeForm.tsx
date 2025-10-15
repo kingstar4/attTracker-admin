@@ -30,11 +30,14 @@ export function AddEmployeeForm({ onSuccess }: AddEmployeeFormProps) {
   const form = useForm<CreateEmployeeDto>({
     resolver: zodResolver(employeeFormSchema),
     defaultValues: {
-      name: "",
-      nin: "",
       email: "",
-      phone: "",
+      first_name: "",
+      last_name: "",
+      nin: "",
+      phone_number: "",
       address: "",
+      emergency_contact_name: "",
+      emergency_contact_phone: "",
     },
   })
 
@@ -61,17 +64,47 @@ export function AddEmployeeForm({ onSuccess }: AddEmployeeFormProps) {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 w-full max-w-md mx-auto">
         <FormField
           control={form.control}
-          name="name"
+          name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Employee Name</FormLabel>
+              <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder="John Doe" {...field} />
+                <Input type="email" placeholder="employee@mycompany.com" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="first_name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>First Name</FormLabel>
+                <FormControl>
+                  <Input placeholder="Jane" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="last_name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Last Name</FormLabel>
+                <FormControl>
+                  <Input placeholder="Smith" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <FormField
           control={form.control}
@@ -80,24 +113,7 @@ export function AddEmployeeForm({ onSuccess }: AddEmployeeFormProps) {
             <FormItem>
               <FormLabel>National ID Number (NIN)</FormLabel>
               <FormControl>
-                <Input placeholder="12345678901" maxLength={11} {...field} />
-              </FormControl>
-              <FormDescription>
-                11-digit National Identification Number
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input type="email" placeholder="john.doe@example.com" {...field} />
+                <Input placeholder="1234567890" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -106,12 +122,12 @@ export function AddEmployeeForm({ onSuccess }: AddEmployeeFormProps) {
 
         <FormField
           control={form.control}
-          name="phone"
+          name="phone_number"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Phone Number</FormLabel>
               <FormControl>
-                <Input type="tel" placeholder="+234 123 456 7890" {...field} />
+                <Input type="tel" placeholder="+1234567891" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -123,9 +139,37 @@ export function AddEmployeeForm({ onSuccess }: AddEmployeeFormProps) {
           name="address"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Address / Location</FormLabel>
+              <FormLabel>Address</FormLabel>
               <FormControl>
-                <Textarea placeholder="Enter employee's address" {...field} />
+                <Input placeholder="456 Oak Ave" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="emergency_contact_name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Emergency Contact Name</FormLabel>
+              <FormControl>
+                <Input placeholder="John Smith" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="emergency_contact_phone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Emergency Contact Phone</FormLabel>
+              <FormControl>
+                <Input type="tel" placeholder="+1234567892" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
