@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-// import { Checkbox } from "@/components/ui/checkbox"
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -56,7 +55,7 @@ type ValidateResponse =
     }
   | { valid: false; message: string };
 
-export default function InviteAcceptPage() {
+function InviteAcceptContent() {
   const params = useSearchParams();
   const token = params.get("token") || "";
   const router = useRouter();
@@ -263,5 +262,27 @@ export default function InviteAcceptPage() {
         ) : null}
       </Card>
     </div>
+  );
+}
+
+export default function InviteAcceptPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto max-w-xl px-4 py-10">
+          <Card className="p-6">
+            <Skeleton className="h-7 w-48 mb-2" />
+            <Skeleton className="h-4 w-64 mb-6" />
+            <div className="space-y-3">
+              <Skeleton className="h-6 w-1/3" />
+              <Skeleton className="h-10" />
+              <Skeleton className="h-10" />
+            </div>
+          </Card>
+        </div>
+      }
+    >
+      <InviteAcceptContent />
+    </Suspense>
   );
 }
