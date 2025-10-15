@@ -9,14 +9,23 @@ interface AppState {
   closeContactModal: () => void
 }
 
-// Function to get initial theme based on system preference or localStorage
+// Function to get initial theme based on system preference
 const getInitialTheme = (): boolean => {
   if (typeof window === "undefined") return true // SSR default
   
-  // Check localStorage first
-  const stored = localStorage.getItem("landing-theme")
-  if (stored !== null) {
-    return JSON.parse(stored).state.isDarkMode
+  try {
+    // Check localStorage first
+    const stored = localStorage.getItem("landing-theme")
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      if (parsed && typeof parsed.state?.isDarkMode === "boolean") {
+        return parsed.state.isDarkMode
+      }
+    }
+  } catch (error) {
+    // If parsing fails, clear the corrupted data
+    console.warn("Failed to parse theme from localStorage, using system preference")
+    localStorage.removeItem("landing-theme")
   }
   
   // Fall back to system preference
