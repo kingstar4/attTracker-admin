@@ -1,5 +1,6 @@
 "use client"
 
+import { Suspense } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -19,10 +20,18 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function SetPasswordPage() {
+  return (
+    <Suspense fallback={<SetPasswordSkeleton />}>
+      <SetPasswordForm />
+    </Suspense>
+  )
+}
+
+function SetPasswordForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const token = searchParams.get("token")
-  const { setPassword, isLoading, error } = useEmployeeStore()
+  const { setPassword, isLoading } = useEmployeeStore()
   const { toast } = useToast()
 
   const form = useForm<PasswordSetup>({
@@ -121,6 +130,19 @@ export default function SetPasswordPage() {
             </form>
           </Form>
         </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+function SetPasswordSkeleton() {
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Loading</CardTitle>
+          <CardDescription>Preparing password setup...</CardDescription>
+        </CardHeader>
       </Card>
     </div>
   )
