@@ -1,3 +1,7 @@
 {
+<<<<<<< HEAD
   "/page": "app/page.js"
+=======
+  "/(public)/page": "app/(public)/page.js"
+>>>>>>> 27b1654c0b7638702363ce27036efb1ee4b7161a
 }
