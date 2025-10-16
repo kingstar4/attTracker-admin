@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,7 +20,13 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { useAuthStore } from "@/store/useAuthStore";
+import api from "@/lib/api";
+import { navigation } from "@/config/navigate";
+import {
+  useAuthStore,
+  type AuthUser,
+  type UserRole,
+} from "@/store/useAuthStore";
 
 const passwordSchema = z
   .string()
@@ -49,11 +55,116 @@ type ValidateResponse =
         email: string;
         firstName: string;
         lastName: string;
-        role: "supervisor" | "employee";
+        role: UserRole;
         companyName: string;
       };
     }
   | { valid: false; message: string };
+
+const INVITE_ACCEPT_ENDPOINT = "/invite/accept";
+
+// Ensure we always fall back to a valid application role value
+const normalizeRole = (role: unknown): UserRole => {
+  if (typeof role === "string") {
+    const value = role.toLowerCase();
+    if (value === "supervisor") return "supervisor";
+    if (value === "employee") return "employee";
+  }
+  return "employee";
+};
+
+// Redirect users to the first navigation entry for their role
+const getRoleLandingPath = (role: UserRole) => {
+  const items = navigation[role as keyof typeof navigation];
+  return items?.[0]?.to ?? `/${role}`;
+};
+
+// Shape the validation payload from the API into a local structure
+const mapValidateResponse = (payload: any): ValidateResponse => {
+  const data = payload?.data ?? payload;
+  const message = data?.message ?? payload?.message;
+  const userData = data?.user ?? data?.invite ?? data;
+  const valid =
+    data?.valid ??
+    (typeof userData?.email === "string" && userData.email.length > 0);
+
+  if (!valid || !userData?.email) {
+    return {
+      valid: false,
+      message: message ?? "Invalid or expired invitation link",
+    };
+  }
+
+  return {
+    valid: true,
+    user: {
+      email: userData.email,
+      firstName: userData.firstName ?? userData.first_name ?? "",
+      lastName: userData.lastName ?? userData.last_name ?? "",
+      role: normalizeRole(userData.role ?? data?.role),
+      companyName:
+        userData.companyName ??
+        userData.company_name ??
+        data?.companyName ??
+        "",
+    },
+  };
+};
+
+const extractAcceptPayload = (
+  payload: any,
+  fallbackEmail: string,
+  fallbackRole: UserRole = "employee"
+): { message: string; user: AuthUser } => {
+  // Some responses wrap the actual data, so normalise first
+  const data = payload?.data ?? payload;
+  const userData = data?.user ?? data;
+  const role = normalizeRole(userData?.role ?? data?.role ?? fallbackRole);
+  const token =
+    userData?.token ?? data?.token ?? data?.access_token ?? data?.authToken;
+
+  const user: AuthUser = {
+    id:
+      userData?.id ??
+      userData?._id ??
+      `inv-${Math.random().toString(36).slice(2)}`,
+    email: userData?.email ?? fallbackEmail,
+    firstName: userData?.firstName ?? userData?.first_name,
+    lastName: userData?.lastName ?? userData?.last_name,
+    companyName:
+      userData?.companyName ??
+      userData?.company_name ??
+      data?.companyName ??
+      "",
+    role,
+    token,
+  };
+
+  return {
+    message: data?.message ?? payload?.message ?? "Invitation accepted",
+    user,
+  };
+};
+
+// Strip useful error information from Axios/fetch errors
+const getErrorMessage = (error: unknown): string => {
+  if (error && typeof error === "object") {
+    const err = error as {
+      response?: { data?: any; statusText?: string };
+      message?: string;
+    };
+    if (err.response) {
+      const respData = err.response.data;
+      if (typeof respData === "string" && respData) return respData;
+      if (respData?.message) return respData.message;
+      if (respData?.error) return respData.error;
+      if (err.response.statusText) return err.response.statusText;
+    }
+    if (err.message) return err.message;
+  }
+  if (typeof error === "string") return error;
+  return "Unknown error";
+};
 
 function InviteAcceptContent() {
   const params = useSearchParams();
@@ -74,15 +185,6 @@ function InviteAcceptContent() {
     mode: "onTouched",
   });
 
-  const roleRedirectMap = useMemo(
-    () =>
-      ({
-        supervisor: "/roles/supervisor/dashboard",
-        employee: "/roles/employee/dashboard",
-      }) as const,
-    []
-  );
-
   useEffect(() => {
     let cancelled = false;
     const run = async () => {
@@ -93,11 +195,11 @@ function InviteAcceptContent() {
       }
       try {
         setLoading(true);
-        const res = await fetch(
-          `/api/invitations/validate?token=${encodeURIComponent(token)}`
-        );
-        if (!res.ok) throw new Error("Failed to validate invitation");
-        const data: ValidateResponse = await res.json();
+        // Validate the invitation token before prompting for password
+        const res = await api.get(INVITE_ACCEPT_ENDPOINT, {
+          params: { token },
+        });
+        const data = mapValidateResponse(res.data);
         if (!cancelled) {
           setInvite(data);
           if (data.valid) {
@@ -106,12 +208,13 @@ function InviteAcceptContent() {
               password: "",
               confirm_password: "",
             });
+            setError(null);
           } else {
             setError(data.message || "Invalid or expired invitation link");
           }
         }
       } catch (e) {
-        if (!cancelled) setError((e as Error).message);
+        if (!cancelled) setError(getErrorMessage(e));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -123,33 +226,48 @@ function InviteAcceptContent() {
   }, [token, form]);
 
   const onSubmit = async (values: AcceptValues) => {
+    if (!token) {
+      toast({
+        title: "Error",
+        description: "Missing invitation token",
+      });
+      return;
+    }
+
     try {
-      const res = await fetch("/api/invitations/accept", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: values.email,
-          password: values.password,
-          confirm_password: values.confirm_password,
-        }),
-      });
-      if (!res.ok) throw new Error("Failed to accept invitation");
-      const data: {
-        success: boolean;
-        message: string;
-        role: "supervisor" | "employee";
-        token: string;
-      } = await res.json();
-      toast({ title: "Success", description: data.message });
-      setUser({
-        id: "inv-" + Math.random().toString(36).slice(2),
+      // Complete the invitation acceptance by creating a password
+      const res = await api.post(INVITE_ACCEPT_ENDPOINT, {
+        token,
         email: values.email,
-        role: data.role,
-        token: data.token,
+        password: values.password,
+        confirm_password: values.confirm_password,
+        password_confirmation: values.confirm_password,
       });
-      router.push(roleRedirectMap[data.role]);
+
+      const { user: acceptedUser, message } = extractAcceptPayload(
+        res.data,
+        values.email,
+        invite && invite.valid ? invite.user.role : "employee"
+      );
+
+      toast({ title: "Success", description: message });
+      setUser(acceptedUser);
+
+      const serializedUser = JSON.stringify(acceptedUser);
+      sessionStorage.setItem("user", serializedUser);
+      localStorage.removeItem("user");
+
+      if (acceptedUser.token) {
+        sessionStorage.setItem("token", acceptedUser.token);
+      } else {
+        sessionStorage.removeItem("token");
+      }
+      localStorage.removeItem("token");
+
+      // Route the new user to their default dashboard
+      router.push(getRoleLandingPath(acceptedUser.role));
     } catch (e) {
-      toast({ title: "Error", description: (e as Error).message });
+      toast({ title: "Error", description: getErrorMessage(e) });
     }
   };
 

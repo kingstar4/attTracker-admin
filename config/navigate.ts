@@ -12,7 +12,7 @@ import {
 
 export const navigation = {
   owner: [
-    { icon: LayoutDashboard, label: "Dashboard", to: "/owner/dashboard" },
+    { icon: LayoutDashboard, label: "Dashboard", to: "/owner" },
     { icon: Building2, label: "Projects / Sites", to: "/owner/projects" },
     { icon: Users, label: "Supervisors", to: "/owner/supervisors" },
     { icon: UsersRound, label: "Employees", to: "/owner/employees" },
@@ -22,7 +22,7 @@ export const navigation = {
   ],
 
   supervisor: [
-    { icon: LayoutDashboard, label: "Dashboard", to: "/supervisor/dashboard" },
+    { icon: LayoutDashboard, label: "Dashboard", to: "/supervisor" },
     { icon: ScanFace, label: "Kiosk (Clock In/Out)", to: "/supervisor/kiosk" },
     { icon: Fingerprint, label: "Enrollment", to: "/supervisor/enrollment" },
     { icon: Users, label: "Employees", to: "/supervisor/employees" },
@@ -30,7 +30,7 @@ export const navigation = {
   ],
 
   employee: [
-    { icon: LayoutDashboard, label: "Dashboard", to: "/employee/dashboard" },
+    { icon: LayoutDashboard, label: "Dashboard", to: "/employee" },
     { icon: Clock, label: "Attendance", to: "/employee/attendance" },
     { icon: Settings, label: "Settings", to: "/employee/settings" },
   ],

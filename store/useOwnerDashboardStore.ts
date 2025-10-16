@@ -1,85 +1,89 @@
 "use client"
 
 import { create } from "zustand"
+import api from "@/lib/api"
 
-export interface SummaryStats {
-  totalEmployees: number
-  activeProjects: number
-  attendanceToday: number // percentage 0-100
-  activeSupervisors: number
+export interface OrganizationStats {
+  pending_leave_requests: number
+  present_today: number
+  total_employees: number
+  total_supervisors: number
 }
 
-export interface TrendPoint {
-  date: string
-  attendance: number
+export interface PendingLeave {
+  id?: string
+  employee_name?: string
+  leave_type?: string
+  start_date?: string
+  end_date?: string
+  status?: string
+  reason?: string
+  created_at?: string
+  [key: string]: unknown
 }
 
-export interface ProjectItem {
-  id: string
-  name: string
-  supervisor: string
-  progress: number // 0-100
-  updatedAt: string
-}
-
-export interface ActivityItem {
-  id: string
-  type: "attendance" | "employee" | "project"
-  message: string
-  timestamp: string
+export interface AttendanceRecord {
+  id?: string
+  employee_name?: string
+  status?: string
+  clock_in?: string
+  clock_out?: string
+  attendance_date?: string
+  created_at?: string
+  [key: string]: unknown
 }
 
 interface OwnerDashboardState {
   loading: boolean
-  summary: SummaryStats | null
-  trends: TrendPoint[]
-  projects: ProjectItem[]
-  activity: ActivityItem[]
+  error: string | null
+  stats: OrganizationStats | null
+  pendingLeaves: PendingLeave[]
+  recentAttendance: AttendanceRecord[]
   fetchAll: () => Promise<void>
+}
+
+const defaultStats: OrganizationStats = {
+  pending_leave_requests: 0,
+  present_today: 0,
+  total_employees: 0,
+  total_supervisors: 0,
 }
 
 export const useOwnerDashboardStore = create<OwnerDashboardState>((set) => ({
   loading: false,
-  summary: null,
-  trends: [],
-  projects: [],
-  activity: [],
+  error: null,
+  stats: null,
+  pendingLeaves: [],
+  recentAttendance: [],
 
   fetchAll: async () => {
-    set({ loading: true })
+    set({ loading: true, error: null })
     try {
-      // Simulate network calls; replace with real fetch('/api/owners/...') later
-      await new Promise((r) => setTimeout(r, 400))
-      const now = new Date()
-      const fmt = (d: Date) => d.toISOString().slice(0, 10)
-      const days = Array.from({ length: 14 }).map((_, i) => {
-        const d = new Date(now)
-        d.setDate(now.getDate() - (13 - i))
-        return { date: fmt(d), attendance: Math.round(70 + Math.random() * 25) }
-      })
+      const response = await api.get("/owner/dashboard")
+      const payload = response.data?.data ?? response.data ?? {}
 
       set({
-        summary: {
-          totalEmployees: 248,
-          activeProjects: 12,
-          attendanceToday: days[days.length - 1].attendance,
-          activeSupervisors: 9,
-        },
-        trends: days,
-        projects: [
-          { id: "p1", name: "Site A - Downtown Tower", supervisor: "Ada I.", progress: 64, updatedAt: fmt(now) },
-          { id: "p2", name: "Bridge Expansion East", supervisor: "Bola K.", progress: 81, updatedAt: fmt(now) },
-          { id: "p3", name: "Airport Hangar", supervisor: "Chinedu U.", progress: 37, updatedAt: fmt(now) },
-        ],
-        activity: [
-          { id: "a1", type: "attendance", message: "187 employees clocked in before 8:00 AM", timestamp: new Date().toISOString() },
-          { id: "a2", type: "employee", message: "New employee added: Jane Doe (Electrician)", timestamp: new Date().toISOString() },
-          { id: "a3", type: "project", message: "Bridge Expansion East progress updated to 81%", timestamp: new Date().toISOString() },
-        ],
+        stats: payload.organization_stats ?? defaultStats,
+        pendingLeaves: Array.isArray(payload.pending_leaves) ? payload.pending_leaves : [],
+        recentAttendance: Array.isArray(payload.recent_attendance) ? payload.recent_attendance : [],
         loading: false,
+        error: null,
       })
-    } catch (e) {
-      set({ loading: false })
+    } catch (error: any) {
+      const message = error.response?.data?.message || error.message || "Failed to load dashboard data"
+      const isNetworkError =
+        typeof message === "string" && message.toLowerCase().includes("network error")
+
+      set({
+        stats: defaultStats,
+        pendingLeaves: [],
+        recentAttendance: [],
+        loading: false,
+        error: isNetworkError ? null : message,
+      })
+
+      const logMethod = isNetworkError ? console.warn : console.error
+      logMethod("Owner dashboard fetch issue:", message)
     }
   },
 }))

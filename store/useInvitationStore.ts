@@ -1,6 +1,7 @@
 "use client"
 
 import { create } from "zustand"
+import api from "@/lib/api"
 
 export type InvitationStatus = "pending" | "accepted" | "expired"
 export type InvitationRole = "supervisor" | "employee"
@@ -18,20 +19,55 @@ export interface Invitation {
   status: InvitationStatus
 }
 
+export interface InvitePayload {
+  email: string
+  first_name: string
+  last_name: string
+  phone_number: string
+  address: string
+  nin?: string
+  emergency_contact_name?: string
+  emergency_contact_phone?: string
+}
+
 interface InvitationState {
   invites: Invitation[]
   loading: boolean
   error: string | null
-  fetchInvites: () => Promise<void>
-  sendInvite: (payload: {
-    email: string
-    first_name: string
-    last_name: string
-    phone_number: string
-    address: string
-  }) => Promise<void>
-  revokeInvite: (id: string) => Promise<void>
-  resendInvite: (id: string) => Promise<void>
+  fetchInvites: (role?: InvitationRole) => Promise<void>
+  sendInvite: (role: InvitationRole, payload: InvitePayload) => Promise<void>
+  revokeInvite: (id: string, role?: InvitationRole) => Promise<void>
+  resendInvite: (id: string, role?: InvitationRole) => Promise<void>
+}
+
+type RoleEndpointConfig = {
+  fetch?: string
+  create: string | string[]
+  revoke: (id: string) => string
+  resend: (id: string) => string
+}
+
+const endpointByRole: Record<InvitationRole, RoleEndpointConfig> = {
+  supervisor: {
+    fetch: undefined,
+    create: "/owner/supervisors",
+    revoke: (id) => `/owner/supervisors/${id}`,
+    resend: (id) => `/owner/supervisors/${id}/resend`,
+  },
+  employee: {
+    fetch: "/supervisor/employees",
+    create: "/supervisor/employees",
+    revoke: (id) => `/supervisor/employees/${id}`,
+    resend: (id) => `/supervisor/employees/${id}/resend`,
+  },
+}
+
+const extractInvites = (data: any): Invitation[] => {
+  if (!data) return []
+  if (Array.isArray(data)) return data as Invitation[]
+  if (Array.isArray(data.invitations)) return data.invitations as Invitation[]
+  if (Array.isArray(data.data)) return data.data as Invitation[]
+  return []
 }
 
 export const useInvitationStore = create<InvitationState>((set, get) => ({
@@ -39,70 +75,91 @@ export const useInvitationStore = create<InvitationState>((set, get) => ({
   loading: false,
   error: null,
 
-  fetchInvites: async () => {
+  fetchInvites: async (role = "supervisor") => {
     set({ loading: true, error: null })
     try {
-      const res = await fetch("/api/invitations")
-      if (!res.ok) throw new Error("Failed to fetch invitations")
-      const data: { invitations: Invitation[] } = await res.json()
-      set({ invites: data.invitations, loading: false })
-    } catch (e) {
-      set({ error: (e as Error).message, loading: false })
+      const fetchEndpoint = endpointByRole[role].fetch
+      if (!fetchEndpoint) {
+        set({ invites: [], loading: false })
+        return
+      }
+
+      const response = await api.get(fetchEndpoint)
+      const payload = response.data?.data ?? response.data
+      set({ invites: extractInvites(payload), loading: false })
+    } catch (error: any) {
+      const message =
+        error.response?.data?.message || error.message || "Failed to fetch invitations"
+      set({ error: message, loading: false })
+      throw new Error(message)
     }
   },
 
-  sendInvite: async (payload) => {
+  sendInvite: async (role, payload) => {
     set({ loading: true, error: null })
     try {
-      const res = await fetch("/api/invitations/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: payload.email,
-          first_name: payload.first_name,
-          last_name: payload.last_name,
-          phone_number: payload.phone_number,
-          address: payload.address,
-        }),
-      })
-      if (!res.ok) throw new Error("Failed to send invitation")
-      // Optionally parse response for token; refresh list instead
-      await get().fetchInvites()
-    } catch (e) {
-      set({ error: (e as Error).message })
-      throw e
+      const endpoints = Array.isArray(endpointByRole[role].create)
+        ? endpointByRole[role].create
+        : [endpointByRole[role].create]
+
+      let lastError: any = null
+
+      for (const endpoint of endpoints) {
+        try {
+          await api.post(endpoint, payload)
+          lastError = null
+          break
+        } catch (error: any) {
+          lastError = error
+          const status = error?.response?.status
+          if (status !== 404 && status !== 405) {
+            throw error
+          }
+        }
+      }
+
+      if (lastError) {
+        throw lastError
+      }
+
+      await get().fetchInvites(role)
+    } catch (error: any) {
+      const message =
+        error.response?.data?.message || error.message || "Failed to send invitation"
+      set({ error: message })
+      throw new Error(message)
     } finally {
       set({ loading: false })
     }
   },
 
-  revokeInvite: async (id) => {
+  revokeInvite: async (id, role = "supervisor") => {
     set({ loading: true, error: null })
     try {
-      const res = await fetch(`/api/invitations/revoke/${id}`, { method: "DELETE" })
-      if (!res.ok) throw new Error("Failed to revoke invitation")
-      await get().fetchInvites()
-    } catch (e) {
-      set({ error: (e as Error).message })
-      throw e
+      await api.delete(endpointByRole[role].revoke(id))
+      await get().fetchInvites(role)
+    } catch (error: any) {
+      const message =
+        error.response?.data?.message || error.message || "Failed to revoke invitation"
+      set({ error: message })
+      throw new Error(message)
     } finally {
       set({ loading: false })
     }
   },
 
-  resendInvite: async (id) => {
+  resendInvite: async (id, role = "supervisor") => {
     set({ loading: true, error: null })
     try {
-      const res = await fetch(`/api/invitations/resend/${id}`, { method: "POST" })
-      if (!res.ok) throw new Error("Failed to resend invitation")
-      // Keep list; server may update sentAt; refresh to reflect
-      await get().fetchInvites()
-    } catch (e) {
-      set({ error: (e as Error).message })
-      throw e
+      await api.post(endpointByRole[role].resend(id))
+      await get().fetchInvites(role)
+    } catch (error: any) {
+      const message =
+        error.response?.data?.message || error.message || "Failed to resend invitation"
+      set({ error: message })
+      throw new Error(message)
     } finally {
       set({ loading: false })
     }
   },
 }))
-

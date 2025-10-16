@@ -1,8 +1,14 @@
 "use client"
 
 import { Card } from "@/components/ui/card"
-import { ActivityItem } from "@/store/useOwnerDashboardStore"
 import { Clock4, UserPlus, Wrench } from "lucide-react"
+
+export interface ActivityItem {
+  id: string
+  type: "attendance" | "employee" | "project"
+  message: string
+  timestamp: string
+}
 
 const typeIcon = {
   attendance: Clock4,

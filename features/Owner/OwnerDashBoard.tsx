@@ -1,28 +1,95 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import {
+  CalendarClock,
+  Clock4,
   LayoutDashboard,
   Users,
-  Building2,
-  TrendingUp,
-  ShieldCheck,
+  UserCheck,
+  UserCog,
 } from "lucide-react";
-import { useOwnerDashboardStore } from "@/store/useOwnerDashboardStore";
-import { SummaryCard } from "@/features/Owner/components/SummaryCard";
-import { AttendanceTrendChart } from "@/features/Owner/components/AttendanceTrendChart";
-import { ProjectsList } from "@/features/Owner/components/ProjectsList";
-import { ActivityFeed } from "@/features/Owner/components/ActivityFeed";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SummaryCard } from "@/features/Owner/components/SummaryCard";
+import {
+  PendingLeave,
+  AttendanceRecord,
+  useOwnerDashboardStore,
+} from "@/store/useOwnerDashboardStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useUserStore } from "@/store/useUserStore";
 import { InviteUserModal } from "@/features/Owner/components/InviteUserModal";
 
+const statusVariant = (status?: string) => {
+  const normalized = status?.toString().toLowerCase();
+  switch (normalized) {
+    case "approved":
+    case "present":
+    case "completed":
+      return "default" as const;
+    case "pending":
+    case "awaiting":
+      return "secondary" as const;
+    case "rejected":
+    case "declined":
+    case "absent":
+      return "destructive" as const;
+    default:
+      return "outline" as const;
+  }
+};
+
+const formatDate = (value?: string, withTime = false) => {
+  if (!value) return "N/A";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return withTime
+    ? date.toLocaleString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : date.toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+};
+
+const leaveRange = (leave: PendingLeave) => {
+  if (leave.start_date && leave.end_date) {
+    return `${formatDate(leave.start_date)} - ${formatDate(leave.end_date)}`;
+  }
+  if (leave.start_date || leave.end_date) {
+    return formatDate(leave.start_date ?? leave.end_date);
+  }
+  return leave.created_at ? formatDate(leave.created_at) : "No schedule";
+};
+
+const attendanceTimestamp = (record: AttendanceRecord) => {
+  if (record.clock_in || record.clock_out) {
+    const start = record.clock_in ? formatDate(record.clock_in, true) : null;
+    const end = record.clock_out ? formatDate(record.clock_out, true) : null;
+    if (start && end) return `${start} → ${end}`;
+    return start ?? end ?? formatDate(record.created_at, true);
+  }
+  if (record.attendance_date) return formatDate(record.attendance_date);
+  return formatDate(record.created_at, true);
+};
+
 export default function OwnerDashboard() {
-  const { fetchAll, loading, summary, trends, projects, activity } =
+  const { fetchAll, loading, stats, pendingLeaves, recentAttendance, error } =
     useOwnerDashboardStore();
   const { user } = useAuthStore();
-  const { role, setRole } = useUserStore();
+  const { role, setRole, setUser: setUserStore } = useUserStore();
+
+  useEffect(() => {
+    if (user) setUserStore(user);
+  }, [user, setUserStore]);
 
   useEffect(() => {
     if (!role && user?.role) setRole(user.role);
@@ -32,74 +99,179 @@ export default function OwnerDashboard() {
     fetchAll();
   }, [fetchAll]);
 
+  const summaryCards = useMemo(
+    () => [
+      {
+        title: "Total Employees",
+        value: stats?.total_employees ?? 0,
+        icon: <Users className="h-5 w-5" />,
+      },
+      {
+        title: "Present Today",
+        value: stats?.present_today ?? 0,
+        icon: <UserCheck className="h-5 w-5" />,
+      },
+      {
+        title: "Total Supervisors",
+        value: stats?.total_supervisors ?? 0,
+        icon: <UserCog className="h-5 w-5" />,
+      },
+      {
+        title: "Pending Leave Requests",
+        value: stats?.pending_leave_requests ?? 0,
+        icon: <CalendarClock className="h-5 w-5" />,
+      },
+    ],
+    [stats]
+  );
+
   return (
     <div className="px-4 py-6 sm:px-6">
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <LayoutDashboard className="h-5 w-5" />
-          <h1 className="text-xl font-semibold">Owner Dashboard</h1>
+          <h1 className="text-xl font-semibold">
+            {user?.companyName
+              ? `${user.companyName} Dashboard`
+              : "Owner Dashboard"}
+          </h1>
         </div>
-        <InviteUserModal projects={projects} />
+        <InviteUserModal />
       </div>
 
-      {/* Top summary */}
-      {loading && !summary ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-28" />
-          ))}
-        </div>
-      ) : summary ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <SummaryCard
-            title="Total Employees"
-            value={summary.totalEmployees}
-            icon={<Users className="h-5 w-5" />}
-          />
-          <SummaryCard
-            title="Active Projects"
-            value={summary.activeProjects}
-            icon={<Building2 className="h-5 w-5" />}
-          />
-          <SummaryCard
-            title="Attendance Rate (Today)"
-            value={`${summary.attendanceToday}%`}
-            icon={<TrendingUp className="h-5 w-5" />}
-            subtitle="vs. baseline"
-          />
-          <SummaryCard
-            title="Active Supervisors"
-            value={summary.activeSupervisors}
-            icon={<ShieldCheck className="h-5 w-5" />}
-          />
-        </div>
+      {error ? (
+        <Card className="border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+          {error}
+        </Card>
       ) : null}
 
-      {/* Middle: chart + projects */}
-      <div className="mt-6 grid gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          {loading && trends.length === 0 ? (
-            <Skeleton className="h-80" />
-          ) : (
-            <AttendanceTrendChart data={trends} />
-          )}
-        </div>
-        <div className="lg:col-span-1">
-          {loading && projects.length === 0 ? (
-            <Skeleton className="h-80" />
-          ) : (
-            <ProjectsList projects={projects} />
-          )}
-        </div>
+      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {loading && !stats
+          ? Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-28" />
+            ))
+          : summaryCards.map((card) => (
+              <SummaryCard
+                key={card.title}
+                title={card.title}
+                value={card.value}
+                icon={card.icon}
+              />
+            ))}
       </div>
 
-      {/* Recent activity */}
-      <div className="mt-6">
-        {loading && activity.length === 0 ? (
-          <Skeleton className="h-60" />
-        ) : (
-          <ActivityFeed items={activity} />
-        )}
+      <div className="mt-6 grid gap-4 lg:grid-cols-2">
+        <Card className="p-4 sm:p-5">
+          <div className="mb-4">
+            <h3 className="text-sm font-semibold">Pending Leave Requests</h3>
+            <p className="text-xs text-muted-foreground">
+              Latest leave applications awaiting action
+            </p>
+          </div>
+          {loading && pendingLeaves.length === 0 ? (
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-16" />
+              ))}
+            </div>
+          ) : pendingLeaves.length > 0 ? (
+            <div className="space-y-4">
+              {pendingLeaves.map((leave, index) => (
+                <div
+                  key={
+                    leave.id ?? `${leave.employee_name ?? "pending"}-${index}`
+                  }
+                  className="rounded-lg border p-3"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <p className="font-medium">
+                        {leave.employee_name ?? "Unnamed employee"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {leave.leave_type ?? "Leave"} • {leaveRange(leave)}
+                      </p>
+                    </div>
+                    <Badge variant={statusVariant(leave.status)}>
+                      {leave.status ? leave.status.toString() : "Pending"}
+                    </Badge>
+                  </div>
+                  {leave.reason ? (
+                    <p className="mt-2 text-xs text-muted-foreground line-clamp-2">
+                      {leave.reason}
+                    </p>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No pending leave requests right now.
+            </p>
+          )}
+        </Card>
+
+        <Card className="p-4 sm:p-5">
+          <div className="mb-4">
+            <h3 className="text-sm font-semibold">Recent Attendance</h3>
+            <p className="text-xs text-muted-foreground">
+              Snapshot of the most recent punches
+            </p>
+          </div>
+          {loading && recentAttendance.length === 0 ? (
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-16" />
+              ))}
+            </div>
+          ) : recentAttendance.length > 0 ? (
+            <div className="space-y-4">
+              {recentAttendance.map((record, index) => (
+                <div
+                  key={
+                    record.id ??
+                    `${record.employee_name ?? "attendance"}-${index}`
+                  }
+                  className="rounded-lg border p-3"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <p className="font-medium">
+                        {record.employee_name ?? "Unnamed employee"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {attendanceTimestamp(record)}
+                      </p>
+                    </div>
+                    <Badge variant={statusVariant(record.status)}>
+                      {record.status ? record.status.toString() : "Recorded"}
+                    </Badge>
+                  </div>
+                  {record.clock_in || record.clock_out ? (
+                    <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                      {record.clock_in ? (
+                        <span className="flex items-center gap-1">
+                          <Clock4 className="h-3.5 w-3.5" />
+                          In: {formatDate(record.clock_in, true)}
+                        </span>
+                      ) : null}
+                      {record.clock_out ? (
+                        <span className="flex items-center gap-1">
+                          <Clock4 className="h-3.5 w-3.5" />
+                          Out: {formatDate(record.clock_out, true)}
+                        </span>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No attendance records available yet.
+            </p>
+          )}
+        </Card>
       </div>
     </div>
   );

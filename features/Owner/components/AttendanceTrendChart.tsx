@@ -1,8 +1,12 @@
 "use client"
 
 import { Card } from "@/components/ui/card"
-import { TrendPoint } from "@/store/useOwnerDashboardStore"
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts"
+
+export interface TrendPoint {
+  date: string
+  attendance: number
+}
 
 export function AttendanceTrendChart({ data }: { data: TrendPoint[] }) {
   return (

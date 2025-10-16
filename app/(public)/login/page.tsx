@@ -1,54 +1,72 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { z } from "zod"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { Eye, EyeOff, LogIn } from "lucide-react"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { Eye, EyeOff, LogIn } from "lucide-react";
 
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { useToast } from "@/hooks/use-toast"
-import { useAuthStore } from "@/store/useAuthStore"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
+import { useAuthStore } from "@/store/useAuthStore";
+import { navigation } from "@/config/navigate";
+import type { UserRole } from "@/store/useAuthStore";
 
 const loginSchema = z.object({
   email: z.string().email("Enter a valid email"),
   password: z.string().min(1, "Password is required"),
   rememberMe: z.boolean().optional().default(false),
-})
+});
 
-type LoginValues = z.infer<typeof loginSchema>
+type LoginValues = z.infer<typeof loginSchema>;
 
-const roleRedirectMap = {
-  owner: "/roles/owner/dashboard",
-  supervisor: "/roles/supervisor/dashboard",
-  employee: "/roles/employee/dashboard",
-} as const
+const getRoleLandingPath = (role: UserRole) => {
+  const items = navigation[role as keyof typeof navigation];
+  return items?.[0]?.to ?? `/${role}`;
+};
 
 export default function LoginPage() {
-  const router = useRouter()
-  const { toast } = useToast()
-  const { login, loading } = useAuthStore()
-  const [showPassword, setShowPassword] = useState(false)
+  const router = useRouter();
+  const { toast } = useToast();
+  const { login, loading } = useAuthStore();
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "", rememberMe: false },
     mode: "onTouched",
-  })
+  });
 
   const onSubmit = async (values: LoginValues) => {
     try {
-      const user = await login(values.email, values.password, values.rememberMe)
-      toast({ title: "Logged in", description: `Welcome back, ${user.firstName ?? "user"}!` })
-      router.push(roleRedirectMap[user.role])
+      const user = await login(
+        values.email,
+        values.password,
+        values.rememberMe
+      );
+      toast({
+        title: "Logged in",
+        description: `Welcome back, ${user.firstName ?? "user"}!`,
+      });
+      router.push(getRoleLandingPath(user.role));
     } catch (err) {
-      toast({ title: "Login failed", description: (err as Error)?.message ?? "Unknown error" })
+      toast({
+        title: "Login failed",
+        description: (err as Error)?.message ?? "Unknown error",
+      });
     }
-  }
+  };
 
   return (
     <div className="container mx-auto max-w-md px-4 py-10">
@@ -66,7 +84,12 @@ export default function LoginPage() {
               <FormItem>
                 <FormLabel>Email</FormLabel>
                 <FormControl>
-                  <Input type="email" placeholder="you@example.com" autoComplete="email" {...field} />
+                  <Input
+                    type="email"
+                    placeholder="you@example.com"
+                    autoComplete="email"
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -81,14 +104,24 @@ export default function LoginPage() {
                 <FormLabel>Password</FormLabel>
                 <FormControl>
                   <div className="relative">
-                    <Input type={showPassword ? "text" : "password"} autoComplete="current-password" {...field} />
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      autoComplete="current-password"
+                      {...field}
+                    />
                     <button
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
                       className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
-                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
                     >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
                     </button>
                   </div>
                 </FormControl>
@@ -104,7 +137,10 @@ export default function LoginPage() {
               render={({ field }) => (
                 <FormItem>
                   <div className="flex items-center gap-2">
-                    <Checkbox checked={field.value} onCheckedChange={(v) => field.onChange(Boolean(v))} />
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={(v) => field.onChange(Boolean(v))}
+                    />
                     <FormLabel className="font-normal">Remember me</FormLabel>
                   </div>
                 </FormItem>
@@ -126,6 +162,5 @@ export default function LoginPage() {
         </form>
       </Form>
     </div>
-  )
+  );
 }
-

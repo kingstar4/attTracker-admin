@@ -2,7 +2,14 @@
 
 import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { ProjectItem } from "@/store/useOwnerDashboardStore"
+
+export interface ProjectItem {
+  id: string
+  name: string
+  supervisor: string
+  progress: number
+  updatedAt: string
+}
 
 export function ProjectsList({ projects }: { projects: ProjectItem[] }) {
   return (

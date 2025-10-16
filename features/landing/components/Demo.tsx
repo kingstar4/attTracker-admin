@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { motion } from "framer-motion"
-import { Play } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { motion } from "framer-motion";
+import { Play } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function Demo() {
   return (
@@ -16,9 +16,12 @@ export function Demo() {
             transition={{ duration: 0.6 }}
             className="text-center mb-12"
           >
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-balance">See WorkTrackr in action</h2>
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-balance">
+              See WorkTrackr in action
+            </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto text-balance leading-relaxed">
-              Watch how easy it is to manage attendance and track your construction workforce.
+              Watch how easy it is to manage attendance and track your
+              construction workforce.
             </p>
           </motion.div>
 
@@ -32,7 +35,7 @@ export function Demo() {
             {/* Demo Mockup */}
             <div className="aspect-video bg-gradient-to-br from-primary via-primary/90 to-accent/80 flex items-center justify-center relative">
               <img
-                src="/construction-attendance-dashboard-interface.jpg"
+                src="/landing-pic.png"
                 alt="WorkTrackr Dashboard Demo"
                 className="w-full h-full object-cover opacity-60"
               />
@@ -61,9 +64,18 @@ export function Demo() {
             className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8"
           >
             {[
-              { title: "Quick Setup", description: "Get started in under 5 minutes" },
-              { title: "Easy to Use", description: "Intuitive interface for all skill levels" },
-              { title: "Mobile Ready", description: "Works on any device, anywhere" },
+              {
+                title: "Quick Setup",
+                description: "Get started in under 5 minutes",
+              },
+              {
+                title: "Easy to Use",
+                description: "Intuitive interface for all skill levels",
+              },
+              {
+                title: "Mobile Ready",
+                description: "Works on any device, anywhere",
+              },
             ].map((item, index) => (
               <div key={index} className="text-center">
                 <h3 className="text-lg font-semibold mb-2">{item.title}</h3>
@@ -74,5 +86,5 @@ export function Demo() {
         </div>
       </div>
     </section>
-  )
+  );
 }

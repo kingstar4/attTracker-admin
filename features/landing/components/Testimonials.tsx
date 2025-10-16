@@ -20,7 +20,7 @@ const testimonials = [
     company: "Metro Infrastructure",
     content:
       "Managing multiple sites used to be a nightmare. Now I can see attendance across all projects instantly. The ROI was immediate.",
-    rating: 5,
+    rating: 4,
     image: "/female-project-director-portrait.jpg",
   },
   {
@@ -79,7 +79,7 @@ export function Testimonials() {
                     {[...Array(testimonial.rating)].map((_, i) => (
                       <Star
                         key={i}
-                        className="w-5 h-5 fill-accent text-accent"
+                        className="w-5 h-5 fill-accent text-chart-3"
                       />
                     ))}
                   </div>
@@ -126,7 +126,7 @@ export function Testimonials() {
                 key={index}
                 src={company.logo || "/placeholder.svg"}
                 alt={company.name}
-                className="h-8 grayscale hover:grayscale-0 transition-all"
+                className="h-10  grayscale hover:grayscale-0 transition-all"
               />
             ))}
           </div>

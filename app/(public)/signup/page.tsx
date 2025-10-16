@@ -1,18 +1,25 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { z } from "zod"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { Eye, EyeOff, ShieldCheck } from "lucide-react"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { Eye, EyeOff, ShieldCheck } from "lucide-react";
 
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { useToast } from "@/hooks/use-toast"
-import { useAuthStore } from "@/store/useAuthStore"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
+import { useAuthStore } from "@/store/useAuthStore";
 
 const passwordSchema = z
   .string()
@@ -20,7 +27,7 @@ const passwordSchema = z
   .regex(/[A-Z]/, "At least one uppercase letter")
   .regex(/[a-z]/, "At least one lowercase letter")
   .regex(/[0-9]/, "At least one number")
-  .regex(/[^A-Za-z0-9]/, "At least one special character")
+  .regex(/[^A-Za-z0-9]/, "At least one special character");
 
 const signupSchema = z
   .object({
@@ -28,22 +35,26 @@ const signupSchema = z
     owner_email: z.string().email("Enter a valid email"),
     owner_password: passwordSchema,
     confirm_owner_password: z.string(),
-    description: z.string().min(10, "Description must be at least 10 characters"),
-    terms: z.literal<boolean>(true, { errorMap: () => ({ message: "Accept Terms and Conditions" }) }),
+    description: z
+      .string()
+      .min(10, "Description must be at least 10 characters"),
+    terms: z.literal<boolean>(true, {
+      errorMap: () => ({ message: "Accept Terms and Conditions" }),
+    }),
   })
   .refine((data) => data.owner_password === data.confirm_owner_password, {
     message: "Passwords must match",
     path: ["confirm_owner_password"],
-  })
+  });
 
-type SignupValues = z.infer<typeof signupSchema>
+type SignupValues = z.infer<typeof signupSchema>;
 
 export default function OwnerSignupPage() {
-  const { toast } = useToast()
-  const router = useRouter()
-  const { signupOwner, loading } = useAuthStore()
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirm, setShowConfirm] = useState(false)
+  const { toast } = useToast();
+  const router = useRouter();
+  const { signupOwner, loading } = useAuthStore();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const form = useForm<SignupValues>({
     resolver: zodResolver(signupSchema),
@@ -56,7 +67,7 @@ export default function OwnerSignupPage() {
       terms: false,
     },
     mode: "onTouched",
-  })
+  });
 
   const onSubmit = async (values: SignupValues) => {
     try {
@@ -65,13 +76,19 @@ export default function OwnerSignupPage() {
         owner_email: values.owner_email,
         owner_password: values.owner_password,
         description: values.description,
-      })
-      toast({ title: "Welcome!", description: "Organization created successfully." })
-      router.push("/roles/owner/dashboard")
+      });
+      toast({
+        title: "Welcome!",
+        description: "Organization created successfully.",
+      });
+      router.push("/owner");
     } catch (err) {
-      toast({ title: "Signup failed", description: (err as Error)?.message ?? "Unknown error" })
+      toast({
+        title: "Signup failed",
+        description: (err as Error)?.message ?? "Unknown error",
+      });
     }
-  }
+  };
 
   return (
     <div className="container mx-auto max-w-xl px-4 py-10">
@@ -103,7 +120,12 @@ export default function OwnerSignupPage() {
               <FormItem>
                 <FormLabel>Owner email</FormLabel>
                 <FormControl>
-                  <Input type="email" placeholder="owner@mycompany.com" autoComplete="email" {...field} />
+                  <Input
+                    type="email"
+                    placeholder="owner@mycompany.com"
+                    autoComplete="email"
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -133,14 +155,24 @@ export default function OwnerSignupPage() {
                   <FormLabel>Password</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <Input type={showPassword ? "text" : "password"} autoComplete="new-password" {...field} />
+                      <Input
+                        type={showPassword ? "text" : "password"}
+                        autoComplete="new-password"
+                        {...field}
+                      />
                       <button
                         type="button"
                         onClick={() => setShowPassword((v) => !v)}
                         className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
-                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        aria-label={
+                          showPassword ? "Hide password" : "Show password"
+                        }
                       >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
                       </button>
                     </div>
                   </FormControl>
@@ -157,14 +189,24 @@ export default function OwnerSignupPage() {
                   <FormLabel>Confirm password</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <Input type={showConfirm ? "text" : "password"} autoComplete="new-password" {...field} />
+                      <Input
+                        type={showConfirm ? "text" : "password"}
+                        autoComplete="new-password"
+                        {...field}
+                      />
                       <button
                         type="button"
                         onClick={() => setShowConfirm((v) => !v)}
                         className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
-                        aria-label={showConfirm ? "Hide password" : "Show password"}
+                        aria-label={
+                          showConfirm ? "Hide password" : "Show password"
+                        }
                       >
-                        {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        {showConfirm ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
                       </button>
                     </div>
                   </FormControl>
@@ -180,8 +222,13 @@ export default function OwnerSignupPage() {
             render={({ field }) => (
               <FormItem>
                 <div className="flex items-center gap-2">
-                  <Checkbox checked={field.value} onCheckedChange={(v) => field.onChange(Boolean(v))} />
-                  <FormLabel className="font-normal">Accept Terms and Conditions</FormLabel>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={(v) => field.onChange(Boolean(v))}
+                  />
+                  <FormLabel className="font-normal">
+                    Accept Terms and Conditions
+                  </FormLabel>
                 </div>
                 <FormMessage />
               </FormItem>
@@ -194,6 +241,5 @@ export default function OwnerSignupPage() {
         </form>
       </Form>
     </div>
-  )
+  );
 }
-

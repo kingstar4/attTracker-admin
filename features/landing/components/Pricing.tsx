@@ -1,14 +1,14 @@
-"use client"
+"use client";
 
-import { motion } from "framer-motion"
-import { Check, Zap } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { motion } from "framer-motion";
+import { Check, Zap } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 const plans = [
   {
     name: "Starter",
-    price: "$49",
+    price: "$0",
     period: "/month",
     description: "Perfect for small construction teams",
     features: [
@@ -19,11 +19,11 @@ const plans = [
       "Email support",
     ],
     cta: "Start Free Trial",
-    popular: false,
+    popular: true,
   },
   {
     name: "Pro",
-    price: "$149",
+    price: "$49",
     period: "/month",
     description: "For growing construction companies",
     features: [
@@ -35,8 +35,8 @@ const plans = [
       "Priority support",
       "API access",
     ],
-    cta: "Start Free Trial",
-    popular: true,
+    cta: "Subscribe Now",
+    popular: false,
   },
   {
     name: "Enterprise",
@@ -55,7 +55,7 @@ const plans = [
     cta: "Contact Sales",
     popular: false,
   },
-]
+];
 
 export function Pricing() {
   return (
@@ -68,9 +68,12 @@ export function Pricing() {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-balance">Simple, transparent pricing</h2>
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-balance">
+            Simple, transparent pricing
+          </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto text-balance leading-relaxed">
-            Choose the plan that fits your construction business. All plans include a 14-day free trial.
+            Choose the plan that fits your construction business. All plans
+            include a 14-day free trial.
           </p>
         </motion.div>
 
@@ -100,7 +103,9 @@ export function Pricing() {
               >
                 <CardHeader className="p-8 pb-6">
                   <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
-                  <p className="text-muted-foreground mb-6">{plan.description}</p>
+                  <p className="text-muted-foreground mb-6">
+                    {plan.description}
+                  </p>
                   <div className="flex items-baseline gap-1">
                     <span className="text-5xl font-bold">{plan.price}</span>
                     <span className="text-muted-foreground">{plan.period}</span>
@@ -140,10 +145,11 @@ export function Pricing() {
           className="text-center mt-16"
         >
           <p className="text-muted-foreground">
-            All plans include 14-day free trial. No credit card required. Cancel anytime.
+            All plans include 14-day free trial. No credit card required. Cancel
+            anytime.
           </p>
         </motion.div>
       </div>
     </section>
-  )
+  );
 }
