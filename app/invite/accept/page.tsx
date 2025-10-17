@@ -173,39 +173,86 @@ const getErrorMessage = (error: unknown): string => {
 function InviteAcceptContent() {
   const params = useSearchParams();
   const token = params.get("token") || "";
+  const emailParam = params.get("email") || "";
   const router = useRouter();
   const { toast } = useToast();
   const { setUser } = useAuthStore();
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [invite, setInvite] = useState<ValidateResponse | null>({
-    valid: true,
-    user: {
-      email: "",
-      firstName: "",
-      lastName: "",
-      role: "supervisor",
-      companyName: "",
-    },
-  });
+  const [invite, setInvite] = useState<ValidateResponse | null>(null);
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
   const form = useForm<AcceptValues>({
     resolver: zodResolver(acceptSchema),
-    defaultValues: { email: "", password: "", confirm_password: "" },
+    defaultValues: {
+      email: emailParam,
+      password: "",
+      confirm_password: "",
+    },
     mode: "onTouched",
   });
 
   useEffect(() => {
-    // Just check if token exists - no API call needed
-    if (!token) {
-      setError(
-        "Missing invitation token. Please use the link from your email."
-      );
-    }
+    let cancelled = false;
+
+    const validateInvite = async () => {
+      if (!token) {
+        setInvite(null);
+        setError(
+          "Missing invitation token. Please use the link from your email."
+        );
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await api.get(INVITE_ACCEPT_ENDPOINT, {
+          params: { token },
+        });
+        if (cancelled) return;
+
+        const result = mapValidateResponse(res.data);
+        setInvite(result);
+
+        if (!result.valid) {
+          setError(result.message ?? "Invalid or expired invitation link");
+        }
+      } catch (err) {
+        if (cancelled) return;
+        setInvite(null);
+        setError(getErrorMessage(err));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    void validateInvite();
+
+    return () => {
+      cancelled = true;
+    };
   }, [token]);
+
+  useEffect(() => {
+    if (!invite || !invite.valid) {
+      return;
+    }
+
+    const nextEmail = invite.user.email || emailParam || "";
+    const currentEmail = form.getValues("email");
+
+    if (nextEmail && currentEmail !== nextEmail) {
+      form.reset({
+        email: nextEmail,
+        password: "",
+        confirm_password: "",
+      });
+    }
+  }, [invite, emailParam, form]);
 
   const onSubmit = async (values: AcceptValues) => {
     if (!token) {
@@ -217,22 +264,24 @@ function InviteAcceptContent() {
     }
 
     try {
-      console.log("Submitting accept invite...");
+      const emailToSubmit =
+        (invite && invite.valid && invite.user.email) ||
+        emailParam ||
+        values.email;
 
       const res = await api.post(INVITE_ACCEPT_ENDPOINT, {
         token,
+        email: emailToSubmit,
         password: values.password,
         confirm_password: values.confirm_password,
+        password_confirmation: values.confirm_password,
       });
 
-      console.log("Accept response:", res.data);
-
-      // Extract email from response if not provided
       const responseEmail =
         res.data?.user?.email ||
         res.data?.data?.user?.email ||
         res.data?.email ||
-        values.email;
+        emailToSubmit;
 
       const { user: acceptedUser, message } = extractAcceptPayload(
         res.data,
@@ -310,7 +359,8 @@ function InviteAcceptContent() {
                       <Input
                         {...field}
                         type="email"
-                        placeholder="your.email@example.com"
+                        readOnly
+                        className="bg-muted"
                       />
                     </FormControl>
                     <FormMessage />
