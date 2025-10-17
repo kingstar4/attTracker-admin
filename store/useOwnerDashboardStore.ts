@@ -8,6 +8,7 @@ export interface OrganizationStats {
   present_today: number
   total_employees: number
   total_supervisors: number
+  [key: string]: unknown
 }
 
 export interface PendingLeave {
@@ -59,7 +60,7 @@ export const useOwnerDashboardStore = create<OwnerDashboardState>((set) => ({
   fetchAll: async () => {
     set({ loading: true, error: null })
     try {
-      const response = await api.get("/owner/dashboard")
+      const response = await api.get("/owner")
       const payload = response.data?.data ?? response.data ?? {}
 
       set({
@@ -87,4 +88,3 @@ export const useOwnerDashboardStore = create<OwnerDashboardState>((set) => ({
     }
   },
 }))
-

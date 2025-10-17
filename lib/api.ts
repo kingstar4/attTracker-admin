@@ -1,10 +1,36 @@
-import axios, {AxiosInstance} from 'axios';
+import axios, { AxiosInstance } from "axios";
+
 const api: AxiosInstance = axios.create({
-    baseURL: 'https://employee-tracker.duckdns.org/api',
-    headers:{
-        "Content-Type": "application/json"
-    }
-})
+  baseURL: "https://employee-tracker.duckdns.org/api",
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+// Endpoints that must never include an Authorization header
+const skipAuthEndpoints = ["/invite/accept"];
+
+const shouldSkipAuthHeader = (url?: string, baseURL?: string): boolean => {
+  if (!url) return false;
+
+  try {
+    const resolvedBase =
+      baseURL ??
+      (typeof window !== "undefined" ? window.location.origin : "http://localhost");
+    // Normalise to a pathname for easier comparison
+    const absoluteUrl = /^https?:\/\//i.test(url)
+      ? new URL(url)
+      : new URL(url, resolvedBase);
+    const { pathname } = absoluteUrl;
+
+    return skipAuthEndpoints.some((endpoint) =>
+      pathname.startsWith(endpoint.replace(/\/+$/, ""))
+    );
+  } catch {
+    // If URL parsing fails, fall back to a simple prefix check
+    return skipAuthEndpoints.some((endpoint) => url.startsWith(endpoint));
+  }
+};
 
 // Request interceptor: attach token
 api.interceptors.request.use(
@@ -12,7 +38,10 @@ api.interceptors.request.use(
     // e.g. attach a JWT token if exists
     const token =
       localStorage.getItem("token") ?? sessionStorage.getItem("token");
-    if (token && config.headers) {
+
+    const skipAuth = shouldSkipAuthHeader(config.url, config.baseURL ?? undefined);
+
+    if (!skipAuth && token && config.headers) {
       config.headers["Authorization"] = `Bearer ${token}`;
     }
     return config;

@@ -63,7 +63,6 @@ type ValidateResponse =
 
 const INVITE_ACCEPT_ENDPOINT = "/invite/accept";
 
-// Ensure we always fall back to a valid application role value
 const normalizeRole = (role: unknown): UserRole => {
   if (typeof role === "string") {
     const value = role.toLowerCase();
@@ -73,13 +72,11 @@ const normalizeRole = (role: unknown): UserRole => {
   return "employee";
 };
 
-// Redirect users to the first navigation entry for their role
 const getRoleLandingPath = (role: UserRole) => {
   const items = navigation[role as keyof typeof navigation];
   return items?.[0]?.to ?? `/${role}`;
 };
 
-// Shape the validation payload from the API into a local structure
 const mapValidateResponse = (payload: any): ValidateResponse => {
   const data = payload?.data ?? payload;
   const message = data?.message ?? payload?.message;
@@ -116,7 +113,6 @@ const extractAcceptPayload = (
   fallbackEmail: string,
   fallbackRole: UserRole = "employee"
 ): { message: string; user: AuthUser } => {
-  // Some responses wrap the actual data, so normalise first
   const data = payload?.data ?? payload;
   const userData = data?.user ?? data;
   const role = normalizeRole(userData?.role ?? data?.role ?? fallbackRole);
@@ -146,18 +142,26 @@ const extractAcceptPayload = (
   };
 };
 
-// Strip useful error information from Axios/fetch errors
 const getErrorMessage = (error: unknown): string => {
   if (error && typeof error === "object") {
     const err = error as {
-      response?: { data?: any; statusText?: string };
+      response?: { data?: any; statusText?: string; status?: number };
       message?: string;
+      code?: string;
     };
+
+    // Network errors
+    if (err.code === "ERR_NETWORK" || err.message?.includes("Network Error")) {
+      return "Cannot connect to server. Please check your internet connection.";
+    }
+
     if (err.response) {
       const respData = err.response.data;
       if (typeof respData === "string" && respData) return respData;
       if (respData?.message) return respData.message;
       if (respData?.error) return respData.error;
+      if (err.response.status === 404)
+        return "Invitation endpoint not found. Please contact support.";
       if (err.response.statusText) return err.response.statusText;
     }
     if (err.message) return err.message;
@@ -173,9 +177,18 @@ function InviteAcceptContent() {
   const { toast } = useToast();
   const { setUser } = useAuthStore();
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [invite, setInvite] = useState<ValidateResponse | null>(null);
+  const [invite, setInvite] = useState<ValidateResponse | null>({
+    valid: true,
+    user: {
+      email: "",
+      firstName: "",
+      lastName: "",
+      role: "supervisor",
+      companyName: "",
+    },
+  });
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -186,44 +199,13 @@ function InviteAcceptContent() {
   });
 
   useEffect(() => {
-    let cancelled = false;
-    const run = async () => {
-      if (!token) {
-        setError("Missing invitation token");
-        setLoading(false);
-        return;
-      }
-      try {
-        setLoading(true);
-        // Validate the invitation token before prompting for password
-        const res = await api.get(INVITE_ACCEPT_ENDPOINT, {
-          params: { token },
-        });
-        const data = mapValidateResponse(res.data);
-        if (!cancelled) {
-          setInvite(data);
-          if (data.valid) {
-            form.reset({
-              email: data.user.email,
-              password: "",
-              confirm_password: "",
-            });
-            setError(null);
-          } else {
-            setError(data.message || "Invalid or expired invitation link");
-          }
-        }
-      } catch (e) {
-        if (!cancelled) setError(getErrorMessage(e));
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    run();
-    return () => {
-      cancelled = true;
-    };
-  }, [token, form]);
+    // Just check if token exists - no API call needed
+    if (!token) {
+      setError(
+        "Missing invitation token. Please use the link from your email."
+      );
+    }
+  }, [token]);
 
   const onSubmit = async (values: AcceptValues) => {
     if (!token) {
@@ -235,19 +217,27 @@ function InviteAcceptContent() {
     }
 
     try {
-      // Complete the invitation acceptance by creating a password
+      console.log("Submitting accept invite...");
+
       const res = await api.post(INVITE_ACCEPT_ENDPOINT, {
         token,
-        email: values.email,
         password: values.password,
         confirm_password: values.confirm_password,
-        password_confirmation: values.confirm_password,
       });
+
+      console.log("Accept response:", res.data);
+
+      // Extract email from response if not provided
+      const responseEmail =
+        res.data?.user?.email ||
+        res.data?.data?.user?.email ||
+        res.data?.email ||
+        values.email;
 
       const { user: acceptedUser, message } = extractAcceptPayload(
         res.data,
-        values.email,
-        invite && invite.valid ? invite.user.role : "employee"
+        responseEmail,
+        invite && invite.valid ? invite.user.role : "supervisor"
       );
 
       toast({ title: "Success", description: message });
@@ -264,9 +254,9 @@ function InviteAcceptContent() {
       }
       localStorage.removeItem("token");
 
-      // Route the new user to their default dashboard
       router.push(getRoleLandingPath(acceptedUser.role));
     } catch (e) {
+      console.error("Accept error:", e);
       toast({ title: "Error", description: getErrorMessage(e) });
     }
   };
@@ -286,9 +276,23 @@ function InviteAcceptContent() {
             <Skeleton className="h-10" />
           </div>
         ) : error ? (
-          <div className="mt-6 flex items-start gap-2 text-destructive">
-            <AlertTriangle className="h-5 w-5" />
-            <p className="text-sm">{error}</p>
+          <div className="mt-6">
+            <div className="flex items-start gap-2 text-destructive mb-4">
+              <AlertTriangle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-medium">Unable to load invitation</p>
+                <p className="text-sm mt-1">{error}</p>
+              </div>
+            </div>
+            <div className="text-xs text-muted-foreground space-y-1 bg-muted p-3 rounded">
+              <p className="font-medium">Troubleshooting:</p>
+              <ul className="list-disc list-inside space-y-1 ml-2">
+                <li>Ensure you clicked the complete link from your email</li>
+                <li>Check if the invitation has expired</li>
+                <li>Verify you have internet connection</li>
+                <li>Contact your administrator if the problem persists</li>
+              </ul>
+            </div>
           </div>
         ) : invite && invite.valid ? (
           <Form {...form}>
@@ -303,7 +307,11 @@ function InviteAcceptContent() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input {...field} readOnly className="bg-muted" />
+                      <Input
+                        {...field}
+                        type="email"
+                        placeholder="your.email@example.com"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -320,13 +328,14 @@ function InviteAcceptContent() {
                       <div className="relative">
                         <Input
                           type={showPass ? "text" : "password"}
-                          placeholder="password123"
+                          placeholder="Enter your password"
                           {...field}
                         />
                         <button
                           type="button"
                           className="absolute right-2 top-1/2 -translate-y-1/2"
                           onClick={() => setShowPass((v) => !v)}
+                          aria-label="Toggle password visibility"
                         >
                           {showPass ? (
                             <EyeOff className="h-4 w-4" />
@@ -351,13 +360,14 @@ function InviteAcceptContent() {
                       <div className="relative">
                         <Input
                           type={showConfirm ? "text" : "password"}
-                          placeholder="password123"
+                          placeholder="Confirm your password"
                           {...field}
                         />
                         <button
                           type="button"
                           className="absolute right-2 top-1/2 -translate-y-1/2"
                           onClick={() => setShowConfirm((v) => !v)}
+                          aria-label="Toggle confirm password visibility"
                         >
                           {showConfirm ? (
                             <EyeOff className="h-4 w-4" />

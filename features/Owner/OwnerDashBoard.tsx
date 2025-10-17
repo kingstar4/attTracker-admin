@@ -74,11 +74,20 @@ const attendanceTimestamp = (record: AttendanceRecord) => {
   if (record.clock_in || record.clock_out) {
     const start = record.clock_in ? formatDate(record.clock_in, true) : null;
     const end = record.clock_out ? formatDate(record.clock_out, true) : null;
-    if (start && end) return `${start} → ${end}`;
+    if (start && end) return `${start} - ${end}`;
     return start ?? end ?? formatDate(record.created_at, true);
   }
   if (record.attendance_date) return formatDate(record.attendance_date);
   return formatDate(record.created_at, true);
+};
+
+const asNumber = (value: unknown): number | null => {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
 };
 
 export default function OwnerDashboard() {
@@ -99,6 +108,49 @@ export default function OwnerDashboard() {
     fetchAll();
   }, [fetchAll]);
 
+  const { supervisorCount, supervisorPending } = useMemo(() => {
+    if (!stats) {
+      return { supervisorCount: 0, supervisorPending: 0 };
+    }
+
+    const statsRecord = stats as Record<string, unknown>;
+    const baseTotal = asNumber(statsRecord.total_supervisors) ?? 0;
+
+    const pendingKeys = [
+      "pending_supervisors",
+      "pending_supervisor_accounts",
+      "pending_supervisor_invitations",
+      "supervisors_pending",
+      "supervisors_pending_setup",
+      "supervisors_invited",
+    ];
+
+    const completedKeys = [
+      "active_supervisors",
+      "completed_supervisors",
+      "supervisors_completed",
+      "supervisors_completed_setup",
+      "supervisors_with_password",
+    ];
+
+    const pendingFromStats =
+      pendingKeys
+        .map((key) => asNumber(statsRecord[key]))
+        .find((value): value is number => value !== null) ?? 0;
+
+    const completedFromStats = completedKeys
+      .map((key) => asNumber(statsRecord[key]))
+      .find((value): value is number => value !== null);
+
+    const activeSupervisors =
+      completedFromStats ?? Math.max(baseTotal - pendingFromStats, 0);
+
+    return {
+      supervisorCount: activeSupervisors,
+      supervisorPending: pendingFromStats > 0 ? pendingFromStats : 0,
+    };
+  }, [stats]);
+
   const summaryCards = useMemo(
     () => [
       {
@@ -113,7 +165,9 @@ export default function OwnerDashboard() {
       },
       {
         title: "Total Supervisors",
-        value: stats?.total_supervisors ?? 0,
+        value: supervisorCount,
+        subtitle:
+          supervisorPending > 0 ? `${supervisorPending} pending setup` : undefined,
         icon: <UserCog className="h-5 w-5" />,
       },
       {
@@ -122,7 +176,7 @@ export default function OwnerDashboard() {
         icon: <CalendarClock className="h-5 w-5" />,
       },
     ],
-    [stats]
+    [stats, supervisorCount, supervisorPending]
   );
 
   return (
