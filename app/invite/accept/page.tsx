@@ -61,7 +61,8 @@ type ValidateResponse =
     }
   | { valid: false; message: string };
 
-const INVITE_ACCEPT_ENDPOINT = "/invite/accept";
+const INVITE_ACCEPT_ENDPOINT =
+  process.env.NEXT_PUBLIC_INVITE_ACCEPT_ENDPOINT || "/invite/accept";
 
 const normalizeRole = (role: unknown): UserRole => {
   if (typeof role === "string") {
