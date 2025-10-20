@@ -61,8 +61,8 @@ type ValidateResponse =
     }
   | { valid: false; message: string };
 
-const INVITE_ACCEPT_ENDPOINT =
-  process.env.NEXT_PUBLIC_INVITE_ACCEPT_ENDPOINT || "/invite/accept";
+const INVITE_VALIDATE_ENDPOINT = "/api/invite/validate";
+const INVITE_ACCEPT_ENDPOINT = "/api/auth/setup-password";
 
 const normalizeRole = (role: unknown): UserRole => {
   if (typeof role === "string") {
@@ -211,7 +211,7 @@ function InviteAcceptContent() {
       try {
         setLoading(true);
         setError(null);
-        const res = await api.get(INVITE_ACCEPT_ENDPOINT, {
+        const res = await api.get(INVITE_VALIDATE_ENDPOINT, {
           params: { token },
         });
         if (cancelled) return;
