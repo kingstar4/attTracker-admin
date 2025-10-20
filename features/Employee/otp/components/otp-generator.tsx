@@ -1,125 +1,145 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
 import { useGeolocation } from "@/hooks/use-geolocation"
-import { isWithinGeofence, SITE_LOCATION } from "@/lib/geofence"
+import { isWithinGeofence } from "@/lib/geofence"
 import { useToast } from "@/hooks/use-toast"
-import { KeyRound, Copy, Clock, LogIn, LogOut, RefreshCw } from "lucide-react"
+import { KeyRound, MailCheck, MapPin, RefreshCw, WifiOff } from "lucide-react"
+import api from "@/lib/api"
+import { useAuthStore } from "@/store/useAuthStore"
+import { useSiteLocationStore } from "@/store/useSiteLocationStore"
 import { cn } from "@/lib/utils"
 
-interface OTPData {
-  code: string
-  expiresAt: number
-  direction: "in" | "out"
+const LOCKOUT_SECONDS = 60
+
+async function fetchPublicIp(): Promise<string | null> {
+  try {
+    const response = await fetch("https://api.ipify.org?format=json")
+    if (!response.ok) {
+      throw new Error("Failed to fetch IP")
+    }
+    const data = await response.json()
+    return data.ip as string
+  } catch (error) {
+    console.error("Unable to determine device IP", error)
+    return null
+  }
 }
 
 export function OTPGenerator() {
-  const [otp, setOtp] = useState<OTPData | null>(null)
-  const [timeLeft, setTimeLeft] = useState<number>(0)
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [lockoutTime, setLockoutTime] = useState<number>(0)
-
-  const { latitude, longitude, error, loading } = useGeolocation()
+  const userEmail = useAuthStore((state) => state.user?.email ?? null)
+  const siteLocation = useSiteLocationStore((state) => state.siteLocation)
+  const { latitude, longitude, error: locationError, loading: locationLoading } = useGeolocation()
   const { toast } = useToast()
 
-  const isWithinSite =
-    latitude !== null &&
-    longitude !== null &&
-    isWithinGeofence(latitude, longitude, SITE_LOCATION.lat, SITE_LOCATION.lng, SITE_LOCATION.radiusMeters)
+  const [deviceIp, setDeviceIp] = useState<string>("")
+  const [ipError, setIpError] = useState<string | null>(null)
+  const [isFetchingIp, setIsFetchingIp] = useState(false)
+  const [isRequesting, setIsRequesting] = useState(false)
+  const [lockoutEnd, setLockoutEnd] = useState<number | null>(null)
+  const [lastRequestedAt, setLastRequestedAt] = useState<number | null>(null)
 
-  const canGenerateOTP = !loading && !error && isWithinSite && lockoutTime === 0
+  const isWithinSite = useMemo(() => {
+    if (locationLoading || locationError || latitude === null || longitude === null) return false
+    return isWithinGeofence(latitude, longitude, siteLocation.lat, siteLocation.lng, siteLocation.radiusMeters)
+  }, [latitude, longitude, locationLoading, locationError, siteLocation])
 
-  // Update countdown timers
   useEffect(() => {
-    const interval = setInterval(() => {
-      const now = Date.now()
+    let timer: number | undefined
+    if (lockoutEnd) {
+      timer = window.setInterval(() => {
+        if (lockoutEnd <= Date.now()) {
+          setLockoutEnd(null)
+          window.clearInterval(timer)
+        }
+      }, 1000)
+    }
+    return () => {
+      if (timer) window.clearInterval(timer)
+    }
+  }, [lockoutEnd])
 
-      // Update OTP expiry countdown
-      if (otp && otp.expiresAt > now) {
-        setTimeLeft(Math.ceil((otp.expiresAt - now) / 1000))
-      } else if (otp) {
-        setOtp(null)
-        setTimeLeft(0)
+  useEffect(() => {
+    const initialiseIp = async () => {
+      setIsFetchingIp(true)
+      const ip = await fetchPublicIp()
+      if (ip) {
+        setDeviceIp(ip)
+        setIpError(null)
+      } else {
+        setIpError("Unable to detect device IP automatically. Please enter it manually.")
       }
+      setIsFetchingIp(false)
+    }
 
-      // Update lockout countdown
-      if (lockoutTime > now) {
-        // Lockout still active
-      } else if (lockoutTime > 0) {
-        setLockoutTime(0)
-      }
-    }, 1000)
+    void initialiseIp()
+  }, [])
 
-    return () => clearInterval(interval)
-  }, [otp, lockoutTime])
+  const lockoutSecondsRemaining = useMemo(() => {
+    if (!lockoutEnd) return 0
+    return Math.max(0, Math.ceil((lockoutEnd - Date.now()) / 1000))
+  }, [lockoutEnd])
 
-  const generateOTP = async (direction: "in" | "out") => {
-    if (!canGenerateOTP) return
+  const canRequestOtp =
+    !!userEmail &&
+    isWithinSite &&
+    !locationLoading &&
+    !locationError &&
+    !!deviceIp &&
+    !isRequesting &&
+    lockoutSecondsRemaining === 0
 
-    setIsGenerating(true)
+  const handleRequestOtp = async () => {
+    if (!userEmail) {
+      toast({
+        title: "Missing Email",
+        description: "We could not find your account email. Please re-login and try again.",
+        variant: "destructive",
+      })
+      return
+    }
 
+    if (!deviceIp) {
+      toast({
+        title: "Device IP required",
+        description: "Enter the device IP to request an OTP.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsRequesting(true)
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // Generate 6-digit OTP
-      const code = Math.floor(100000 + Math.random() * 900000).toString()
-      const expiresAt = Date.now() + 60000 // 60 seconds from now
-
-      setOtp({
-        code,
-        expiresAt,
-        direction,
+      await api.post("/auth/request-otp", {
+        email: userEmail,
+        device_ip: deviceIp,
       })
 
-      // Set lockout for 60 seconds
-      setLockoutTime(Date.now() + 60000)
+      setLockoutEnd(Date.now() + LOCKOUT_SECONDS * 1000)
+      setLastRequestedAt(Date.now())
 
       toast({
-        title: "OTP Generated",
-        description: `Your ${direction === "in" ? "clock-in" : "clock-out"} OTP is ready. Valid for 60 seconds.`,
+        title: "OTP Sent",
+        description: `A one-time password has been emailed to ${userEmail}.`,
       })
-    } catch (error) {
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message ??
+        error?.message ??
+        "Failed to request OTP. Please try again."
+
       toast({
-        title: "Generation Failed",
-        description: "Failed to generate OTP. Please try again.",
+        title: "Request Failed",
+        description: message,
         variant: "destructive",
       })
     } finally {
-      setIsGenerating(false)
+      setIsRequesting(false)
     }
-  }
-
-  const copyToClipboard = async () => {
-    if (!otp) return
-
-    try {
-      await navigator.clipboard.writeText(otp.code)
-      toast({
-        title: "Copied!",
-        description: "OTP code copied to clipboard",
-      })
-    } catch (error) {
-      toast({
-        title: "Copy Failed",
-        description: "Failed to copy OTP to clipboard",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, "0")}`
-  }
-
-  const getLockoutTimeLeft = () => {
-    if (lockoutTime === 0) return 0
-    return Math.max(0, Math.ceil((lockoutTime - Date.now()) / 1000))
   }
 
   return (
@@ -129,94 +149,121 @@ export function OTPGenerator() {
           <KeyRound className="h-5 w-5" />
           OTP Generator
         </CardTitle>
-        <CardDescription>Generate one-time password for attendance when biometric kiosk is unavailable</CardDescription>
+        <CardDescription>
+          Request a one-time password. The code will be delivered to your registered email address.
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Current OTP Display */}
-        {otp && (
-          <div className="p-4 bg-card border rounded-lg space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="font-semibold">Active OTP</h4>
-              <Badge
-                className={cn("capitalize", otp.direction === "in" ? "bg-present text-white" : "bg-navbar text-white")}
-              >
-                Clock {otp.direction}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Account Email</span>
+            {userEmail ? (
+              <Badge variant="secondary" className="font-mono">
+                {userEmail}
               </Badge>
-            </div>
+            ) : (
+              <Badge variant="destructive">Not Available</Badge>
+            )}
+          </div>
 
-            <div className="text-center space-y-2">
-              <div className="text-3xl font-mono font-bold tracking-wider">{otp.code}</div>
-              <Button variant="outline" size="sm" onClick={copyToClipboard} className="gap-2 bg-transparent">
-                <Copy className="h-4 w-4" />
-                Copy Code
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Device IP Address</span>
+              {isFetchingIp ? (
+                <Badge variant="secondary" className="gap-1">
+                  <RefreshCw className="h-3 w-3 animate-spin" />
+                  Detecting
+                </Badge>
+              ) : deviceIp ? (
+                <Badge variant="outline">{deviceIp}</Badge>
+              ) : (
+                <Badge variant="destructive" className="gap-1">
+                  <WifiOff className="h-3 w-3" />
+                  Required
+                </Badge>
+              )}
+            </div>
+            <Input
+              placeholder="Enter or confirm your device IP"
+              value={deviceIp}
+              onChange={(event) => setDeviceIp(event.target.value)}
+              disabled={isRequesting}
+            />
+            {ipError && <p className="text-xs text-destructive">{ipError}</p>}
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={async () => {
+                  setIsFetchingIp(true)
+                  const ip = await fetchPublicIp()
+                  if (ip) {
+                    setDeviceIp(ip)
+                    setIpError(null)
+                  } else {
+                    setIpError("Automatic detection failed. Please enter the IP manually.")
+                  }
+                  setIsFetchingIp(false)
+                }}
+                disabled={isFetchingIp || isRequesting}
+              >
+                <RefreshCw className={cn("h-3 w-3 mr-2", isFetchingIp && "animate-spin")} />
+                Refresh IP
               </Button>
             </div>
-
-            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-              <Clock className="h-4 w-4" />
-              <span>Expires in: {formatTime(timeLeft)}</span>
-            </div>
           </div>
-        )}
+        </div>
 
-        {/* Generation Buttons */}
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <Button
-              onClick={() => generateOTP("in")}
-              disabled={!canGenerateOTP || isGenerating || !!otp}
-              className="gap-2"
-              variant="default"
-            >
-              {isGenerating ? <RefreshCw className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />}
-              Clock In OTP
-            </Button>
+        <div className="space-y-2">
+          <Button
+            onClick={handleRequestOtp}
+            disabled={!canRequestOtp}
+            className="w-full gap-2"
+            size="lg"
+          >
+            {isRequesting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <MailCheck className="h-4 w-4" />}
+            Generate OTP
+          </Button>
 
-            <Button
-              onClick={() => generateOTP("out")}
-              disabled={!canGenerateOTP || isGenerating || !!otp}
-              className="gap-2"
-              variant="secondary"
-            >
-              {isGenerating ? <RefreshCw className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
-              Clock Out OTP
-            </Button>
-          </div>
-
-          {/* Status Messages */}
-          {loading && <p className="text-sm text-muted-foreground text-center">Checking your location...</p>}
-
-          {error && <p className="text-sm text-destructive text-center">Location error: {error}</p>}
-
-          {!loading && !error && !isWithinSite && (
-            <p className="text-sm text-destructive text-center">
-              You must be within the construction site to generate OTP
+          {!isWithinSite && !locationLoading && !locationError && (
+            <p className="text-xs text-destructive text-center">
+              You must be within the supervisor&apos;s geofence to request an OTP.
             </p>
           )}
 
-          {getLockoutTimeLeft() > 0 && (
-            <p className="text-sm text-muted-foreground text-center">
-              Next OTP available in: {formatTime(getLockoutTimeLeft())}
+          {locationLoading && (
+            <p className="text-xs text-muted-foreground text-center">Confirming your location...</p>
+          )}
+
+          {locationError && (
+            <p className="text-xs text-destructive text-center">
+              Location error: {locationError}. OTP requests are disabled until location is available.
             </p>
           )}
 
-          {otp && (
-            <p className="text-sm text-muted-foreground text-center">
-              Please use the current OTP before generating a new one
+          {lockoutSecondsRemaining > 0 && (
+            <p className="text-xs text-muted-foreground text-center">
+              You can request a new OTP in {lockoutSecondsRemaining}s.
+            </p>
+          )}
+
+          {lastRequestedAt && (
+            <p className="text-xs text-muted-foreground text-center">
+              Last request: {new Date(lastRequestedAt).toLocaleTimeString()}
             </p>
           )}
         </div>
 
-        {/* Instructions */}
-        <div className="p-3 bg-muted rounded-lg">
-          <h5 className="font-medium mb-2">How to use OTP:</h5>
-          <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-            <li>Ensure you are within the construction site geofence</li>
-            <li>Generate an OTP for clock-in or clock-out</li>
-            <li>Copy the 6-digit code</li>
-            <li>Enter the code at the attendance kiosk or supervisor station</li>
-            <li>OTP expires after 60 seconds for security</li>
-          </ol>
+        <div className="p-3 bg-muted rounded-lg space-y-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 font-medium text-foreground">
+            <MapPin className="h-4 w-4" />
+            Location Reminder
+          </div>
+          <p>
+            OTP requests are only allowed when you are physically present at <strong>{siteLocation.name}</strong>.
+            Ensure you share the received OTP code with your supervisor to complete attendance.
+          </p>
         </div>
       </CardContent>
     </Card>

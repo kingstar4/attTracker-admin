@@ -2,13 +2,14 @@
 
 import type React from "react";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Navbar } from "./Navbar";
 import { Sidebar } from "./Sidebar";
 // import { ThreeJSHeader } from "./ThreeJSHeader"
 import { useMediaQuery } from "@/hooks/use-mobile";
 import { useAuthStore, type AuthUser } from "@/store/useAuthStore";
+import { useSiteLocationStore } from "@/store/useSiteLocationStore";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -35,9 +36,13 @@ export function Layout({ children }: LayoutProps) {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
+  const siteLocation = useSiteLocationStore((state) => state.siteLocation);
+  const setSiteLocation = useSiteLocationStore((state) => state.setSiteLocation);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const locationRequestedForUserRef = useRef<string | null>(null);
+  const locationWatchIdRef = useRef<number | null>(null);
 
   const hasUser = Boolean(user);
 
@@ -62,6 +67,64 @@ export function Layout({ children }: LayoutProps) {
     setCheckingAuth(false);
     router.replace("/login");
   }, [hasUser, setUser, router]);
+
+  useEffect(() => {
+    if (!hasUser || user?.role !== "supervisor") {
+      return;
+    }
+
+    const userIdentifier = user?.id ?? user?.email ?? "supervisor";
+    const alreadyRequested = locationRequestedForUserRef.current === userIdentifier;
+    const locationOutdated = siteLocation.source !== "supervisor";
+
+    if (alreadyRequested && !locationOutdated) {
+      return;
+    }
+
+    locationRequestedForUserRef.current = userIdentifier;
+
+    if (!("geolocation" in navigator)) {
+      console.warn("Geolocation is not supported in this environment.");
+      return;
+    }
+
+    const fallbackName =
+      user?.companyName ||
+      [user?.firstName, user?.lastName].filter(Boolean).join(" ") ||
+      "Supervisor Site";
+
+    const handleSuccess = (position: GeolocationPosition) => {
+      setSiteLocation({
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+        radiusMeters: siteLocation.radiusMeters,
+        name: fallbackName,
+        source: "supervisor",
+        updatedAt: new Date().toISOString(),
+      });
+    };
+
+    const handleError = (error: GeolocationPositionError) => {
+      console.warn("Unable to capture supervisor location", error);
+    };
+
+    const options: PositionOptions = {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 60000,
+    };
+
+    navigator.geolocation.getCurrentPosition(handleSuccess, handleError, options);
+    const watchId = navigator.geolocation.watchPosition(handleSuccess, handleError, options);
+    locationWatchIdRef.current = watchId;
+
+    return () => {
+      if (locationWatchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(locationWatchIdRef.current);
+        locationWatchIdRef.current = null;
+      }
+    };
+  }, [hasUser, user, siteLocation.radiusMeters, siteLocation.source, setSiteLocation]);
 
   if (checkingAuth) {
     return (

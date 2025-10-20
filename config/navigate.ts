@@ -8,6 +8,7 @@ import {
   Settings,
   Building2,
   Mail,
+  CalendarX2,
 } from "lucide-react"
 
 export const navigation = {
@@ -31,7 +32,8 @@ export const navigation = {
 
   employee: [
     { icon: LayoutDashboard, label: "Dashboard", to: "/employee" },
-    { icon: Clock, label: "Attendance", to: "/employee/attendance" },
+    { icon: Clock, label: "Attendance", to: "/employee/otp" },
+    { icon: CalendarX2, label: "Leave", to: "/employee/leave-request" },
     { icon: Settings, label: "Settings", to: "/employee/settings" },
   ],
 }

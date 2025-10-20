@@ -434,7 +434,8 @@ function InviteAcceptContent() {
               />
 
               <Button type="submit" className="w-full">
-                <CheckCircle2 className="mr-2 h-4 w-4" /> Accept Invite
+                <CheckCircle2 className="mr-2 h-4 w-4" />
+                {loading ? "Accepting..." : "Accept Invite"}
               </Button>
             </form>
           </Form>

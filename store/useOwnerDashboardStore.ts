@@ -60,7 +60,7 @@ export const useOwnerDashboardStore = create<OwnerDashboardState>((set) => ({
   fetchAll: async () => {
     set({ loading: true, error: null })
     try {
-      const response = await api.get("/owner")
+      const response = await api.get("/owner/dashboard")
       const payload = response.data?.data ?? response.data ?? {}
 
       set({

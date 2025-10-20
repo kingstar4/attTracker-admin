@@ -167,7 +167,9 @@ export default function OwnerDashboard() {
         title: "Total Supervisors",
         value: supervisorCount,
         subtitle:
-          supervisorPending > 0 ? `${supervisorPending} pending setup` : undefined,
+          supervisorPending > 0
+            ? `${supervisorPending} pending setup`
+            : undefined,
         icon: <UserCog className="h-5 w-5" />,
       },
       {
@@ -186,7 +188,7 @@ export default function OwnerDashboard() {
           <LayoutDashboard className="h-5 w-5" />
           <h1 className="text-xl font-semibold">
             {user?.companyName
-              ? `${user.companyName} Dashboard`
+              ? `${user.firstName} Dashboard`
               : "Owner Dashboard"}
           </h1>
         </div>

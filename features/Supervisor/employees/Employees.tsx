@@ -1,20 +1,32 @@
-"use client"
+"use client";
 
-import { useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
-import { UserPlus } from "lucide-react"
-import { useEmployeeStore } from "@/store/useEmployeeStore"
-import { AddEmployeeForm } from "./components/AddEmployeeForm"
-import { EmployeeList } from "./components/EmployeeList"
+import { useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { UserPlus } from "lucide-react";
+import { useEmployeeStore } from "@/store/useEmployeeStore";
+import { AddEmployeeForm } from "./components/AddEmployeeForm";
+import { EmployeeList } from "./components/EmployeeList";
 
 export function Employees() {
-  const { fetchEmployees } = useEmployeeStore()
+  const { fetchEmployees } = useEmployeeStore();
 
   useEffect(() => {
-    fetchEmployees()
-  }, [fetchEmployees])
+    fetchEmployees();
+  }, [fetchEmployees]);
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -25,23 +37,16 @@ export function Employees() {
             Add and manage employees in your organization
           </p>
         </div>
-        
-        <Sheet>
-          <SheetTrigger asChild>
+
+        <AddEmployeeForm
+          trigger={
             <Button>
               <UserPlus className="w-4 h-4 mr-2" />
               Add Employee
             </Button>
-          </SheetTrigger>
-          <SheetContent className="w-full sm:max-w-md">
-            <SheetHeader>
-              <SheetTitle>Add New Employee</SheetTitle>
-            </SheetHeader>
-            <div className="mt-6">
-              <AddEmployeeForm onSuccess={() => fetchEmployees()} />
-            </div>
-          </SheetContent>
-        </Sheet>
+          }
+          onSuccess={() => fetchEmployees()}
+        />
       </div>
 
       <Card>
@@ -56,5 +61,5 @@ export function Employees() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

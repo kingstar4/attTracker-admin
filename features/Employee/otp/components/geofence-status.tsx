@@ -3,12 +3,14 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useGeolocation } from "@/hooks/use-geolocation"
-import { isWithinGeofence, SITE_LOCATION } from "@/lib/geofence"
+import { isWithinGeofence } from "@/lib/geofence"
+import { useSiteLocationStore } from "@/store/useSiteLocationStore"
 import { MapPin, CheckCircle, XCircle, Loader2 } from "lucide-react"
 import { useMemo } from "react"
 
 export function GeofenceStatus() {
   const { latitude, longitude, error, loading } = useGeolocation()
+  const siteLocation = useSiteLocationStore((state) => state.siteLocation)
 
   const geofenceStatus = useMemo(() => {
     if (loading) return { status: "loading", message: "Getting your location..." }
@@ -18,19 +20,19 @@ export function GeofenceStatus() {
     const withinGeofence = isWithinGeofence(
       latitude,
       longitude,
-      SITE_LOCATION.lat,
-      SITE_LOCATION.lng,
-      SITE_LOCATION.radiusMeters,
+      siteLocation.lat,
+      siteLocation.lng,
+      siteLocation.radiusMeters,
     )
 
     return {
       status: withinGeofence ? "inside" : "outside",
       message: withinGeofence
-        ? `You are within ${SITE_LOCATION.radiusMeters}m of ${SITE_LOCATION.name}`
-        : `You are outside the ${SITE_LOCATION.radiusMeters}m radius of ${SITE_LOCATION.name}`,
+        ? `You are within ${siteLocation.radiusMeters}m of ${siteLocation.name}`
+        : `You are outside the ${siteLocation.radiusMeters}m radius of ${siteLocation.name}`,
       coordinates: { lat: latitude, lng: longitude },
     }
-  }, [latitude, longitude, error, loading])
+  }, [latitude, longitude, error, loading, siteLocation])
 
   const getStatusIcon = () => {
     switch (geofenceStatus.status) {
@@ -89,9 +91,9 @@ export function GeofenceStatus() {
               Your Location: {geofenceStatus.coordinates.lat.toFixed(6)}, {geofenceStatus.coordinates.lng.toFixed(6)}
             </p>
             <p>
-              Site Location: {SITE_LOCATION.lat.toFixed(6)}, {SITE_LOCATION.lng.toFixed(6)}
+              Site Location: {siteLocation.lat.toFixed(6)}, {siteLocation.lng.toFixed(6)}
             </p>
-            <p>Required Radius: {SITE_LOCATION.radiusMeters}m</p>
+            <p>Required Radius: {siteLocation.radiusMeters}m</p>
           </div>
         )}
 

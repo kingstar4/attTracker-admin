@@ -3,8 +3,18 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Info, Shield, MapPin, Clock } from "lucide-react"
+import { useSiteLocationStore } from "@/store/useSiteLocationStore"
+
+const formatCoordinate = (value: number, axis: "lat" | "lng") => {
+  const direction = axis === "lat" ? (value >= 0 ? "N" : "S") : value >= 0 ? "E" : "W"
+  return `${Math.abs(value).toFixed(4)} deg ${direction}`
+}
 
 export function OTPInfo() {
+  const siteLocation = useSiteLocationStore((state) => state.siteLocation)
+  const formattedLat = formatCoordinate(siteLocation.lat, "lat")
+  const formattedLng = formatCoordinate(siteLocation.lng, "lng")
+
   return (
     <div className="space-y-4">
       <Alert>
@@ -50,14 +60,19 @@ export function OTPInfo() {
             <h4 className="font-medium mb-2">Site Information</h4>
             <div className="text-sm text-muted-foreground space-y-1">
               <p>
-                <strong>Site:</strong> Construction Site Alpha
+                <strong>Site:</strong> {siteLocation.name}
               </p>
               <p>
-                <strong>Geofence Radius:</strong> 100 meters
+                <strong>Geofence Radius:</strong> {siteLocation.radiusMeters} meters
               </p>
               <p>
-                <strong>Location:</strong> 40.7128°N, 74.0060°W
+                <strong>Location:</strong> {formattedLat}, {formattedLng}
               </p>
+              {siteLocation.updatedAt && (
+                <p>
+                  <strong>Last Updated:</strong> {new Date(siteLocation.updatedAt).toLocaleString()}
+                </p>
+              )}
             </div>
           </div>
         </CardContent>
