@@ -61,8 +61,8 @@ type ValidateResponse =
     }
   | { valid: false; message: string };
 
-const INVITE_VALIDATE_ENDPOINT = "/api/invite/validate";
-const INVITE_ACCEPT_ENDPOINT = "/api/auth/setup-password";
+const INVITE_VALIDATE_ENDPOINT = "/invite/validate";
+const INVITE_ACCEPT_ENDPOINT = "/auth/setup-password";
 
 const normalizeRole = (role: unknown): UserRole => {
   if (typeof role === "string") {
