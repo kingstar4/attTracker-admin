@@ -19,7 +19,7 @@ import {
 import { useEmployeeModuleStore } from "@/store/useEmployeeModuleStore";
 
 export function AttendanceChart() {
-  const { attendanceRecords } = useEmployeeModuleStore();
+  const { attendanceRecords, dashboardLoading } = useEmployeeModuleStore();
 
   // Generate chart data for the last 30 days
   const generateChartData = () => {
@@ -75,29 +75,37 @@ export function AttendanceChart() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" />
-            <YAxis domain={[0, 100]} />
-            <Tooltip
-              formatter={(value: number) => {
-                if (value === 100) return ["Present", "Status"];
-                if (value === 75) return ["Late", "Status"];
-                if (value === 50) return ["On Leave", "Status"];
-                if (value === 0) return ["Absent", "Status"];
-                return ["Unknown", "Status"];
-              }}
-            />
-            <Line
-              type="monotone"
-              dataKey="statusScore"
-              stroke="hsl(var(--primary))"
-              strokeWidth={2}
-              dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4 }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+        {dashboardLoading && attendanceRecords.length === 0 ? (
+          <div className="h-[300px] w-full animate-pulse bg-muted rounded-lg" />
+        ) : attendanceRecords.length === 0 ? (
+          <p className="text-muted-foreground text-sm text-center py-12">
+            No attendance records available yet.
+          </p>
+        ) : (
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" />
+              <YAxis domain={[0, 100]} />
+              <Tooltip
+                formatter={(value: number) => {
+                  if (value === 100) return ["Present", "Status"]
+                  if (value === 75) return ["Late", "Status"]
+                  if (value === 50) return ["On Leave", "Status"]
+                  if (value === 0) return ["Absent", "Status"]
+                  return ["Unknown", "Status"]
+                }}
+              />
+              <Line
+                type="monotone"
+                dataKey="statusScore"
+                stroke="hsl(var(--primary))"
+                strokeWidth={2}
+                dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
       </CardContent>
     </Card>
   );

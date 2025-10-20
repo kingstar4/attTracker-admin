@@ -12,10 +12,11 @@ import { useEmployeeModuleStore } from "@/store/useEmployeeModuleStore";
 import { cn } from "@/lib/utils";
 
 export function RecentActivity() {
-  const { attendanceRecords } = useEmployeeModuleStore();
+  const { attendanceRecords, dashboardLoading } = useEmployeeModuleStore();
 
   // Get recent records (last 10)
   const recentRecords = attendanceRecords
+    .slice()
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 10);
 
@@ -35,7 +36,9 @@ export function RecentActivity() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+    const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) return dateString || "-";
+    return date.toLocaleDateString("en-US", {
       weekday: "short",
       month: "short",
       day: "numeric",
@@ -50,7 +53,9 @@ export function RecentActivity() {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {recentRecords.length === 0 ? (
+          {dashboardLoading && attendanceRecords.length === 0 ? (
+            <div className="h-40 w-full animate-pulse bg-muted rounded-lg" />
+          ) : recentRecords.length === 0 ? (
             <p className="text-muted-foreground text-center py-4">
               No attendance records found
             </p>

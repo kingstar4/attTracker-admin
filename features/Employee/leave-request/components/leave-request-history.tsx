@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import {
   Card,
@@ -6,35 +6,38 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { useEmployeeModuleStore } from "@/store/useEmployeeModuleStore";
-import { cn } from "@/lib/utils";
-import { History, Calendar, Clock, FileText } from "lucide-react";
+} from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { useEmployeeModuleStore } from "@/store/useEmployeeModuleStore"
+import { cn } from "@/lib/utils"
+import { History, Calendar, Clock, FileText } from "lucide-react"
+
+const formatDate = (dateString: string) => {
+  if (!dateString) return "-"
+  const date = new Date(dateString)
+  if (Number.isNaN(date.getTime())) return dateString
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  })
+}
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "approved":
+      return "bg-present text-white"
+    case "pending":
+      return "bg-navbar text-white"
+    case "rejected":
+      return "bg-absent text-white"
+    default:
+      return "bg-muted text-muted-foreground"
+  }
+}
 
 export function LeaveRequestHistory() {
-  const { leaveRequests } = useEmployeeModuleStore();
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "approved":
-        return "bg-present text-white";
-      case "pending":
-        return "bg-navbar text-white";
-      case "rejected":
-        return "bg-absent text-white";
-      default:
-        return "bg-muted text-muted-foreground";
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
+  const { leaveRequests, leaveRequestsLoading, leaveRequestsError } = useEmployeeModuleStore()
 
   return (
     <Card>
@@ -48,7 +51,17 @@ export function LeaveRequestHistory() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {leaveRequests.length === 0 ? (
+        {leaveRequestsError ? (
+          <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
+            {leaveRequestsError}
+          </div>
+        ) : leaveRequestsLoading ? (
+          <div className="space-y-4">
+            <div className="h-16 w-full animate-pulse rounded-md bg-muted" />
+            <div className="h-16 w-full animate-pulse rounded-md bg-muted" />
+            <div className="h-16 w-full animate-pulse rounded-md bg-muted" />
+          </div>
+        ) : leaveRequests.length === 0 ? (
           <div className="text-center py-8">
             <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground">No leave requests found</p>
@@ -58,22 +71,15 @@ export function LeaveRequestHistory() {
           </div>
         ) : (
           <div className="space-y-4">
-            {/* Desktop Table View */}
             <div className="hidden md:block overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left py-3 px-4 font-medium">
-                      Start Date
-                    </th>
-                    <th className="text-left py-3 px-4 font-medium">
-                      End Date
-                    </th>
+                    <th className="text-left py-3 px-4 font-medium">Start Date</th>
+                    <th className="text-left py-3 px-4 font-medium">End Date</th>
                     <th className="text-left py-3 px-4 font-medium">Reason</th>
                     <th className="text-left py-3 px-4 font-medium">Status</th>
-                    <th className="text-left py-3 px-4 font-medium">
-                      Submitted
-                    </th>
+                    <th className="text-left py-3 px-4 font-medium">Submitted</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -95,15 +101,8 @@ export function LeaveRequestHistory() {
                         {request.reason}
                       </td>
                       <td className="py-4 px-4">
-                        <Badge
-                          className={cn(
-                            "capitalize",
-                            getStatusColor(request.status)
-                          )}
-                        >
-                          <span className="text-muted-foreground">
-                            {request.status}
-                          </span>
+                        <Badge className={cn("capitalize", getStatusColor(request.status))}>
+                          {request.status}
                         </Badge>
                       </td>
                       <td className="py-4 px-4 text-sm text-muted-foreground">
@@ -115,20 +114,11 @@ export function LeaveRequestHistory() {
               </table>
             </div>
 
-            {/* Mobile Card View */}
             <div className="md:hidden space-y-4">
               {leaveRequests.map((request) => (
-                <div
-                  key={request.id}
-                  className="border rounded-lg p-4 space-y-3"
-                >
+                <div key={request.id} className="border rounded-lg p-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <Badge
-                      className={cn(
-                        "capitalize",
-                        getStatusColor(request.status)
-                      )}
-                    >
+                    <Badge className={cn("capitalize", getStatusColor(request.status))}>
                       {request.status}
                     </Badge>
                   </div>
@@ -137,8 +127,7 @@ export function LeaveRequestHistory() {
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Calendar className="h-4 w-4" />
                       <span>
-                        {formatDate(request.start_date)} -{" "}
-                        {formatDate(request.end_date)}
+                        {formatDate(request.start_date)} - {formatDate(request.end_date)}
                       </span>
                     </div>
                     <div className="text-sm">
@@ -156,5 +145,5 @@ export function LeaveRequestHistory() {
         )}
       </CardContent>
     </Card>
-  );
+  )
 }

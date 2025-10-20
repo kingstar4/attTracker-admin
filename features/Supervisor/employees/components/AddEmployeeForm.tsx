@@ -23,7 +23,7 @@ const inviteSchema = z.object({
   email: z.string().email("Enter a valid email"),
   first_name: z.string().min(2, "First name is too short"),
   last_name: z.string().min(2, "Last name is too short"),
-  nin: z.string().min(5, "NIN must be at least 5 characters"),
+  nin: z.string().min(11, "NIN must be at least 11 characters"),
   phone_number: z.string().min(7, "Phone number is too short"),
   address: z.string().min(5, "Address is too short"),
   emergency_contact_name: z

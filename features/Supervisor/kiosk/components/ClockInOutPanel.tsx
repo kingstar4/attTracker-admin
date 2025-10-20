@@ -1,12 +1,11 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { LogIn, LogOut, RefreshCw } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
-import api from "@/lib/api"
 import { useAttendanceStore } from "@/store/useAttendanceStore"
 
 interface AttendanceFormState {
@@ -30,64 +29,24 @@ const defaultFormState: AttendanceFormState = {
   deviceIp: "",
 }
 
-const isSameDay = (timestamp: string, reference: Date) => {
-  const recordDate = new Date(timestamp)
-  return (
-    recordDate.getFullYear() === reference.getFullYear() &&
-    recordDate.getMonth() === reference.getMonth() &&
-    recordDate.getDate() === reference.getDate()
-  )
-}
-
 export function ClockInOutPanel({ onSuccess }: ClockInOutPanelProps) {
   const { toast } = useToast()
-  const attendanceRecords = useAttendanceStore((state) => state.attendanceRecords)
-  const employees = useAttendanceStore((state) => state.employees)
+  const clockIn = useAttendanceStore((state) => state.clockIn)
+  const clockOut = useAttendanceStore((state) => state.clockOut)
   const [processing, setProcessing] = useState(false)
   const [selectedAction, setSelectedAction] = useState<"clock-in" | "clock-out">("clock-in")
   const [formState, setFormState] = useState<AttendanceFormState>(defaultFormState)
 
   const trimmedEmployeeId = formState.employeeId.trim()
 
-  const hasClockedInToday = useMemo(() => {
-    if (!trimmedEmployeeId) return false
-    const today = new Date()
-    return attendanceRecords.some(
-      (record) =>
-        record.employeeId === trimmedEmployeeId &&
-        record.action === "clock-in" &&
-        isSameDay(record.timestamp, today),
-    )
-  }, [attendanceRecords, trimmedEmployeeId])
-
-  const currentEmployee = useMemo(
-    () => employees.find((emp) => emp.id === trimmedEmployeeId),
-    [employees, trimmedEmployeeId],
-  )
-
-  const clockInBlocked = selectedAction === "clock-in" && (hasClockedInToday || currentEmployee?.status === "in")
-
-  const canSubmit = useMemo(() => {
-    if (clockInBlocked) return false
-    return (
-      trimmedEmployeeId.length > 0 &&
-      formState.otpCode.trim().length > 0 &&
-      formState.deviceIp.trim().length > 0 &&
-      !processing
-    )
-  }, [clockInBlocked, trimmedEmployeeId, formState.otpCode, formState.deviceIp, processing])
+  const canSubmit =
+    trimmedEmployeeId.length > 0 &&
+    formState.otpCode.trim().length > 0 &&
+    formState.deviceIp.trim().length > 0 &&
+    !processing
 
   const handleSubmit = async () => {
-    if (!canSubmit) {
-      if (clockInBlocked) {
-        toast({
-          title: "Clock-In Not Allowed",
-          description: "This employee has already clocked in today.",
-          variant: "destructive",
-        })
-      }
-      return
-    }
+    if (!canSubmit) return
 
     try {
       setProcessing(true)
@@ -95,18 +54,18 @@ export function ClockInOutPanel({ onSuccess }: ClockInOutPanelProps) {
       const trimmedOtp = formState.otpCode.trim()
       const trimmedDeviceIp = formState.deviceIp.trim()
 
-      const endpoint =
-        selectedAction === "clock-in"
-          ? "/supervisor/attendance/clock-in"
-          : "/supervisor/attendance/clock-out"
+      const payload = {
+        employeeId: trimmedEmployeeId,
+        otpCode: trimmedOtp,
+        deviceIp: trimmedDeviceIp,
+        deviceId: window.navigator.userAgent,
+      }
 
-      await api.post(endpoint, {
-        employee_id: trimmedEmployeeId,
-        method: "otp",
-        device_ip: trimmedDeviceIp,
-        otp_code: trimmedOtp,
-        device_id: window.navigator.userAgent,
-      })
+      if (selectedAction === "clock-in") {
+        await clockIn(payload)
+      } else {
+        await clockOut(payload)
+      }
 
       toast({
         title: selectedAction === "clock-in" ? "Clock-In Successful" : "Clock-Out Successful",
@@ -196,11 +155,6 @@ export function ClockInOutPanel({ onSuccess }: ClockInOutPanelProps) {
             </SelectItem>
           </SelectContent>
         </Select>
-        {clockInBlocked && (
-          <p className="text-xs text-destructive">
-            Employee has already clocked in today. Please select Clock Out instead.
-          </p>
-        )}
       </div>
 
       <Button

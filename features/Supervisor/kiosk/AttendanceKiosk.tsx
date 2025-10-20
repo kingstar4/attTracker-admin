@@ -19,7 +19,7 @@ interface LastActionState {
 export function AttendanceKiosk() {
   const [lastAction, setLastAction] = useState<LastActionState | null>(null)
   const [panelResetCounter, setPanelResetCounter] = useState(0)
-  const { employees, recordAttendance } = useAttendanceStore()
+  const { employees } = useAttendanceStore()
   const { toast } = useToast()
 
   const currentlyIn = employees.filter((emp) => emp.status === "in").length
@@ -27,13 +27,6 @@ export function AttendanceKiosk() {
 
   const handleSubmissionSuccess = (payload: { employeeId: string; action: "clock-in" | "clock-out" }) => {
     const nowIso = new Date().toISOString()
-
-    recordAttendance({
-      employeeId: payload.employeeId,
-      action: payload.action,
-      timestamp: nowIso,
-    })
-
     const matchedEmployee = employees.find((emp) => emp.id === payload.employeeId)
     setLastAction({
       employee: matchedEmployee ? matchedEmployee.name : `Employee ID ${payload.employeeId}`,

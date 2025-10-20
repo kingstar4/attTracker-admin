@@ -16,9 +16,9 @@ export interface SiteLocation {
 const STORAGE_KEY = "attTracker.siteLocation"
 
 export const DEFAULT_SITE_LOCATION: SiteLocation = {
-  lat: 6.447400,
-  lng: 3.390300,
-  radiusMeters: 100,
+  lat: 6.565468, 
+  lng: 3.259118,
+  radiusMeters: 200,
   name: "Construction Site Alpha",
   source: "default",
 }

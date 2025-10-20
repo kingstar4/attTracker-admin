@@ -1,7 +1,22 @@
-import { LeaveRequestForm } from "./components/leave-request-form";
-import { LeaveRequestHistory } from "./components/leave-request-history";
+"use client"
+
+import { useEffect } from "react"
+import { LeaveRequestForm } from "./components/leave-request-form"
+import { LeaveRequestHistory } from "./components/leave-request-history"
+import { useEmployeeModuleStore } from "@/store/useEmployeeModuleStore"
 
 export default function LeaveRequestPage() {
+  const fetchEmployeeDashboard = useEmployeeModuleStore((state) => state.fetchEmployeeDashboard)
+  const fetchLeaveRequests = useEmployeeModuleStore((state) => state.fetchLeaveRequests)
+
+  useEffect(() => {
+    void fetchEmployeeDashboard()
+  }, [fetchEmployeeDashboard])
+
+  useEffect(() => {
+    void fetchLeaveRequests()
+  }, [fetchLeaveRequests])
+
   return (
     <div className="space-y-6">
       <div>
@@ -16,5 +31,5 @@ export default function LeaveRequestPage() {
         <LeaveRequestHistory />
       </div>
     </div>
-  );
+  )
 }

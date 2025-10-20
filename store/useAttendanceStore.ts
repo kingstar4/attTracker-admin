@@ -1,4 +1,5 @@
 import { create } from "zustand"
+import api from "@/lib/api"
 
 interface Employee {
   id: string
@@ -30,6 +31,15 @@ interface AttendanceStore {
   setKioskMode: (enabled: boolean) => void
   getEmployeeStatus: (employeeId: string) => Employee | undefined
   getTodayAttendance: () => AttendanceRecord[]
+  clockIn: (payload: ClockPayload) => Promise<void>
+  clockOut: (payload: ClockPayload) => Promise<void>
+}
+
+interface ClockPayload {
+  employeeId: string
+  otpCode: string
+  deviceIp: string
+  deviceId: string
 }
 
 export const useAttendanceStore = create<AttendanceStore>((set, get) => ({
@@ -129,6 +139,42 @@ export const useAttendanceStore = create<AttendanceStore>((set, get) => ({
       const recordDate = new Date(record.timestamp)
       recordDate.setHours(0, 0, 0, 0)
       return recordDate.getTime() === today.getTime()
+    })
+  },
+
+  clockIn: async ({ employeeId, otpCode, deviceIp, deviceId }) => {
+    await api.post("/supervisor/attendance/clock-in", {
+      employee_id: employeeId,
+      method: "fingerprint",
+      device_ip: deviceIp,
+      otp_code: otpCode,
+      device_id: "debid78642",
+    })
+
+    const timestamp = new Date().toISOString()
+    get().recordAttendance({
+      employeeId,
+      action: "clock-in",
+      timestamp,
+      location: deviceIp,
+    })
+  },
+
+  clockOut: async ({ employeeId, otpCode, deviceIp, deviceId }) => {
+    await api.post("/supervisor/attendance/clock-out", {
+      employee_id: employeeId,
+      method: "fingerprint",
+      device_ip: deviceIp,
+      otp_code: otpCode,
+      device_id: "debid78642",
+    })
+
+    const timestamp = new Date().toISOString()
+    get().recordAttendance({
+      employeeId,
+      action: "clock-out",
+      timestamp,
+      location: deviceIp,
     })
   },
 }))
