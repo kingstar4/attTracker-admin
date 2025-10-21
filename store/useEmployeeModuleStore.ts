@@ -122,6 +122,21 @@ const safeMessage = (error: unknown): string => {
   return "Request failed"
 }
 
+const isNetworkError = (error: unknown): boolean => {
+  if (!error || typeof error !== "object") {
+    return false
+  }
+
+  const maybe = error as { code?: unknown; message?: unknown }
+  const code = typeof maybe.code === "string" ? maybe.code.toLowerCase() : ""
+  if (code === "err_network") {
+    return true
+  }
+
+  const message = typeof maybe.message === "string" ? maybe.message.toLowerCase() : ""
+  return message.includes("network") && message.includes("error")
+}
+
 export const useEmployeeModuleStore = create<EmployeeState>()(
   persist(
     (set) => ({
@@ -562,13 +577,16 @@ export const useEmployeeModuleStore = create<EmployeeState>()(
             }))
           }
         } catch (error) {
+          const message = isNetworkError(error)
+            ? "Network error: Unable to reach the server. Please check your connection and try again."
+            : safeMessage((error as any)?.response?.data?.message ?? error)
+
           set({
             leaveRequestSubmitting: false,
-            leaveRequestsError: safeMessage(
-              (error as any)?.response?.data?.message ?? error,
-            ),
+            leaveRequestsError: message,
           })
-          throw error
+
+          throw new Error(message)
         }
       },
 
