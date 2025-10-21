@@ -18,40 +18,63 @@ const STORAGE_KEY = "attTracker.siteLocation"
 export const DEFAULT_SITE_LOCATION: SiteLocation = {
   lat: 6.565468, 
   lng: 3.259118,
-  radiusMeters: 200,
+  radiusMeters: 500,
   name: "Construction Site Alpha",
   source: "default",
 }
 
-const loadInitialLocation = (): SiteLocation => {
-  if (typeof window === "undefined") {
-    return DEFAULT_SITE_LOCATION
-  }
-
-  const storedValue = window.localStorage.getItem(STORAGE_KEY)
+const parseStoredSiteLocation = (storedValue: string | null): SiteLocation | null => {
   if (!storedValue) {
-    return DEFAULT_SITE_LOCATION
+    return null
   }
 
   try {
     const parsed = JSON.parse(storedValue) as Partial<SiteLocation>
+
     if (
       typeof parsed.lat === "number" &&
+      Number.isFinite(parsed.lat) &&
       typeof parsed.lng === "number" &&
+      Number.isFinite(parsed.lng) &&
       typeof parsed.radiusMeters === "number" &&
+      Number.isFinite(parsed.radiusMeters) &&
       typeof parsed.name === "string"
     ) {
+      const radiusMeters =
+        parsed.radiusMeters > 0 ? parsed.radiusMeters : DEFAULT_SITE_LOCATION.radiusMeters
+      const name = parsed.name.trim().length > 0 ? parsed.name : DEFAULT_SITE_LOCATION.name
+      const source: SiteLocationSource =
+        parsed.source === "supervisor" || parsed.source === "manual" ? parsed.source : "default"
+
       return {
         lat: parsed.lat,
         lng: parsed.lng,
-        radiusMeters: parsed.radiusMeters,
-        name: parsed.name,
-        source: parsed.source === "supervisor" || parsed.source === "manual" ? parsed.source : "default",
+        radiusMeters,
+        name,
+        source,
         updatedAt: typeof parsed.updatedAt === "string" ? parsed.updatedAt : undefined,
       }
     }
   } catch (error) {
     console.warn("Failed to parse stored site location", error)
+  }
+
+  return null
+}
+
+const readStoredSiteLocation = (): SiteLocation | null => {
+  if (typeof window === "undefined") {
+    return null
+  }
+
+  const storedValue = window.localStorage.getItem(STORAGE_KEY)
+  return parseStoredSiteLocation(storedValue)
+}
+
+const loadInitialLocation = (): SiteLocation => {
+  const storedLocation = readStoredSiteLocation()
+  if (storedLocation) {
+    return storedLocation
   }
 
   return DEFAULT_SITE_LOCATION
@@ -94,5 +117,22 @@ export const useSiteLocationStore = create<SiteLocationState>((set) => ({
     set({ siteLocation: DEFAULT_SITE_LOCATION })
   },
 }))
+
+const readStoredSupervisorSiteLocation = (): SiteLocation | null => {
+  const storedLocation = readStoredSiteLocation()
+  return storedLocation && storedLocation.source === "supervisor" ? storedLocation : null
+}
+
+export const getStoredSiteLocation = (): SiteLocation | null => readStoredSiteLocation()
+
+export const getSupervisorSiteLocation = (): SiteLocation | null => {
+  const { siteLocation } = useSiteLocationStore.getState()
+
+  if (siteLocation.source === "supervisor") {
+    return siteLocation
+  }
+
+  return readStoredSupervisorSiteLocation()
+}
 
 export const SITE_LOCATION_STORAGE_KEY = STORAGE_KEY

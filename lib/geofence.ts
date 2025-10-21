@@ -1,6 +1,12 @@
 "use client"
 
-import { useSiteLocationStore, DEFAULT_SITE_LOCATION, type SiteLocation } from "@/store/useSiteLocationStore"
+import {
+  useSiteLocationStore,
+  DEFAULT_SITE_LOCATION,
+  getStoredSiteLocation,
+  getSupervisorSiteLocation,
+  type SiteLocation,
+} from "@/store/useSiteLocationStore"
 
 // Haversine formula to calculate distance between two coordinates in meters
 export function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -30,7 +36,22 @@ export function isWithinGeofence(
 }
 
 export const getSiteLocation = (): SiteLocation => {
-  return useSiteLocationStore.getState().siteLocation
+  const supervisorLocation = getSupervisorSiteLocation()
+  if (supervisorLocation) {
+    return supervisorLocation
+  }
+
+  const storedLocation = getStoredSiteLocation()
+  if (storedLocation && storedLocation.source === "manual") {
+    return storedLocation
+  }
+
+  const currentStateLocation = useSiteLocationStore.getState().siteLocation
+  if (currentStateLocation.source === "manual") {
+    return currentStateLocation
+  }
+
+  return DEFAULT_SITE_LOCATION
 }
 
 export const getDefaultSiteLocation = (): SiteLocation => DEFAULT_SITE_LOCATION

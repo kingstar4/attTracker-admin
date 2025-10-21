@@ -1,7 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAttendanceStore } from "@/store/useAttendanceStore";
+import { useSupervisorStore } from "@/store/useSupervisorStore";
 import {
   PieChart,
   Pie,
@@ -13,22 +14,39 @@ import {
 
 // Define colors for each status
 const STATUS_COLORS = {
-  in: "#22c55e", // Green
-  out: "#ef4444", // Red
-  break: "#f59e0b", // Orange/Amber
+  present: "#22c55e", // Green
+  absent: "#ef4444", // Red
+  on_break: "#f59e0b", // Orange/Amber
+  on_leave: "#6366f1", // Indigo
 };
 
 export function StatusPieChart() {
-  const { employees } = useAttendanceStore();
+  const { todayAttendance, fetchTodayAttendance } = useSupervisorStore();
 
-  const inCount = employees.filter((e) => e.status === "in").length;
-  const outCount = employees.filter((e) => e.status === "out").length;
-  const breakCount = employees.filter((e) => e.status === "break").length;
+  useEffect(() => {
+    fetchTodayAttendance();
+  }, [fetchTodayAttendance]);
+
+  if (!todayAttendance?.employees) return null;
+
+  const presentCount = todayAttendance.employees.filter(
+    (e) => e.status === "present"
+  ).length;
+  const absentCount = todayAttendance.employees.filter(
+    (e) => e.status === "absent"
+  ).length;
+  const onBreakCount = todayAttendance.employees.filter(
+    (e) => e.status === "on_break"
+  ).length;
+  const onLeaveCount = todayAttendance.employees.filter(
+    (e) => e.status === "on_leave"
+  ).length;
 
   const data = [
-    { name: "In", value: inCount, color: STATUS_COLORS.in },
-    { name: "Out", value: outCount, color: STATUS_COLORS.out },
-    { name: "Break", value: breakCount, color: STATUS_COLORS.break },
+    { name: "Present", value: presentCount, color: STATUS_COLORS.present },
+    { name: "Absent", value: absentCount, color: STATUS_COLORS.absent },
+    { name: "On Break", value: onBreakCount, color: STATUS_COLORS.on_break },
+    { name: "On Leave", value: onLeaveCount, color: STATUS_COLORS.on_leave },
   ].filter((d) => d.value > 0);
 
   return (

@@ -10,7 +10,7 @@ export interface Employee {
   nin: string
   emergency_contact_name: string
   emergency_contact_phone: string
-  status: "active" | "inactive"
+  is_active: boolean
   createdAt: string
   updatedAt: string
 }
@@ -30,7 +30,7 @@ export const employeeFormSchema = z.object({
   email: z.string().email("Invalid email address"),
   first_name: z.string().min(2, "First name must be at least 2 characters"),
   last_name: z.string().min(2, "Last name must be at least 2 characters"),
-  nin: z.string().min(10, "NIN must be at least 10 characters"),
+  nin: z.string().min(11, "NIN must be at least 11 characters"),
   phone_number: z.string().min(10, "Phone number must be at least 10 digits"),
   address: z.string().min(5, "Address must be at least 5 characters"),
   emergency_contact_name: z.string().min(2, "Emergency contact name must be at least 2 characters"),

@@ -1,5 +1,6 @@
-"use client"
+"use client";
 
+import { useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -7,7 +8,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,20 +16,25 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Button } from "@/components/ui/button"
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react"
-import { useEmployeeStore } from "@/store/useEmployeeStore"
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { useEmployeeStore } from "@/store/useEmployeeStore";
 
 export function EmployeeList() {
-  const { employees, isLoading, deleteEmployee } = useEmployeeStore()
+  const { employees, isLoading, deleteEmployee, fetchEmployees } =
+    useEmployeeStore();
+
+  useEffect(() => {
+    fetchEmployees();
+  }, [fetchEmployees]);
 
   if (isLoading) {
     return (
       <div className="text-center py-8">
         <div className="text-muted-foreground">Loading employees...</div>
       </div>
-    )
+    );
   }
 
   if (employees.length === 0) {
@@ -39,7 +45,7 @@ export function EmployeeList() {
           Add your first employee using the button above
         </p>
       </div>
-    )
+    );
   }
 
   return (
@@ -53,7 +59,7 @@ export function EmployeeList() {
             <TableHead>NIN</TableHead>
             <TableHead>Emergency Contact</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead className="w-[60px]"></TableHead>
+            <TableHead className="w-[60px]">Action</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -66,18 +72,20 @@ export function EmployeeList() {
               <TableCell>
                 <div className="text-sm">
                   <div>{employee.emergency_contact_name}</div>
-                  <div className="text-muted-foreground">{employee.emergency_contact_phone}</div>
+                  <div className="text-muted-foreground">
+                    {employee.emergency_contact_phone}
+                  </div>
                 </div>
               </TableCell>
               <TableCell>
                 <span
                   className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    employee.status === "active"
+                    employee.is_active
                       ? "bg-green-100 text-green-800"
-                      : "bg-gray-100 text-gray-800"
+                      : "bg-red-100 text-red-800"
                   }`}
                 >
-                  {employee.status}
+                  {employee.is_active ? "Active" : "Inactive"}
                 </span>
               </TableCell>
               <TableCell>
@@ -99,8 +107,12 @@ export function EmployeeList() {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onClick={() => {
-                        if (window.confirm("Are you sure you want to delete this employee?")) {
-                          deleteEmployee(employee.id)
+                        if (
+                          window.confirm(
+                            "Are you sure you want to delete this employee?"
+                          )
+                        ) {
+                          deleteEmployee(employee.id);
                         }
                       }}
                       className="text-red-600"
@@ -115,5 +127,5 @@ export function EmployeeList() {
         </TableBody>
       </Table>
     </div>
-  )
+  );
 }

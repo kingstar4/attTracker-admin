@@ -72,10 +72,12 @@ export function AddEmployeeForm({ onSuccess, trigger }: AddEmployeeFormProps) {
     try {
       setSubmitting(true);
       await sendInvite("employee", values);
+
       toast({
         title: "Success",
         description: "Employee invited successfully",
       });
+
       form.reset();
       setOpen(false);
       onSuccess?.();

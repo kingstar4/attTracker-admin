@@ -440,7 +440,7 @@ export const useEmployeeModuleStore = create<EmployeeState>()(
       fetchLeaveRequests: async () => {
         set({ leaveRequestsLoading: true, leaveRequestsError: null })
         try {
-          const response = await api.get("/employee/leave-request")
+          const response = await api.get("/employee/leave-requests")
           const payload = response.data?.data ?? response.data ?? []
           const requestsRaw: unknown[] = Array.isArray(payload)
             ? payload
@@ -502,7 +502,7 @@ export const useEmployeeModuleStore = create<EmployeeState>()(
       submitLeaveRequest: async (payload) => {
         set({ leaveRequestSubmitting: true, leaveRequestsError: null })
         try {
-          const response = await api.post("/employee/leave-request", payload)
+          const response = await api.post("/employee/leave-requests", payload)
           const data = response.data?.data ?? response.data ?? {}
 
           const maybeArray = Array.isArray(data) ? data : Array.isArray(data.items) ? data.items : null

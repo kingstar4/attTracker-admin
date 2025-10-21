@@ -1,13 +1,16 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { format } from "date-fns"
+import { Calendar as CalendarIcon } from "lucide-react"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
 import { useEmployeeModuleStore } from "@/store/useEmployeeModuleStore"
-import { format } from "date-fns"
 
 const formatDisplayDate = (date: string) => {
   if (!date) return "-"
@@ -30,9 +33,23 @@ const statusColor = (status: string) => {
   }
 }
 
+const toApiDate = (date?: Date) => {
+  if (!date) return ""
+  return date.toISOString().split("T")[0]
+}
+
+const sameDay = (a?: Date, b?: Date) => {
+  if (!a || !b) return false
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  )
+}
+
 export function AttendanceHistory() {
-  const [startDate, setStartDate] = useState<string>("")
-  const [endDate, setEndDate] = useState<string>("")
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined)
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined)
 
   const {
     attendanceHistory,
@@ -42,10 +59,29 @@ export function AttendanceHistory() {
     fetchAttendanceHistory,
   } = useEmployeeModuleStore()
 
+  useEffect(() => {
+    const start = attendanceHistoryFilters?.startDate
+    const end = attendanceHistoryFilters?.endDate
+
+    if (start) {
+      const parsed = new Date(start)
+      if (!Number.isNaN(parsed.getTime()) && !sameDay(parsed, startDate)) {
+        setStartDate(parsed)
+      }
+    }
+
+    if (end) {
+      const parsed = new Date(end)
+      if (!Number.isNaN(parsed.getTime()) && !sameDay(parsed, endDate)) {
+        setEndDate(parsed)
+      }
+    }
+  }, [attendanceHistoryFilters?.startDate, attendanceHistoryFilters?.endDate])
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!startDate || !endDate) return
-    await fetchAttendanceHistory(startDate, endDate)
+    await fetchAttendanceHistory(toApiDate(startDate), toApiDate(endDate))
   }
 
   const hasSearched = Boolean(attendanceHistoryFilters)
@@ -62,28 +98,60 @@ export function AttendanceHistory() {
               <label className="text-sm font-medium text-muted-foreground" htmlFor="history-start-date">
                 Start Date
               </label>
-              <Input
-                id="history-start-date"
-                type="date"
-                value={startDate}
-                max={endDate || undefined}
-                onChange={(event) => setStartDate(event.target.value)}
-                required
-              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="history-start-date"
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !startDate && "text-muted-foreground",
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {startDate ? format(startDate, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={startDate}
+                    onSelect={(date) => setStartDate(date ?? undefined)}
+                    initialFocus
+                    disabled={(date) => (endDate ? date > endDate : false)}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-muted-foreground" htmlFor="history-end-date">
                 End Date
               </label>
-              <Input
-                id="history-end-date"
-                type="date"
-                value={endDate}
-                min={startDate || undefined}
-                onChange={(event) => setEndDate(event.target.value)}
-                required
-              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="history-end-date"
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !endDate && "text-muted-foreground",
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {endDate ? format(endDate, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={endDate}
+                    onSelect={(date) => setEndDate(date ?? undefined)}
+                    initialFocus
+                    disabled={(date) => (startDate ? date < startDate : false)}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
             <Button

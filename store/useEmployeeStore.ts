@@ -2,6 +2,7 @@
 
 import { create } from "zustand"
 import { CreateEmployeeDto, Employee } from "@/types/employee"
+import api from "@/lib/api"
 
 interface EmployeeStore {
   employees: Employee[]
@@ -28,48 +29,36 @@ export const useEmployeeStore = create<EmployeeStore>((set, get) => ({
   fetchEmployees: async () => {
     set({ isLoading: true, error: null })
     try {
-      const response = await fetch("/api/employees")
-      if (!response.ok) throw new Error("Failed to fetch employees")
-      const data = await response.json()
-      set({ employees: data, isLoading: false })
-    } catch (error) {
-      set({ error: (error as Error).message, isLoading: false })
+      const response = await api.get("/supervisor/employees")
+      if (!response.data) throw new Error("No data received from server")
+      set({ employees: response.data.data || response.data, isLoading: false })
+    } catch (error: any) {
+      set({ error: error.response?.data?.message || error.message, isLoading: false })
     }
   },
 
   createEmployee: async (data: CreateEmployeeDto) => {
     set({ isLoading: true, error: null })
     try {
-      const response = await fetch("/api/employees", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      })
-      
-      if (!response.ok) throw new Error("Failed to create employee")
-      const newEmployee = await response.json()
+      const response = await api.post("/supervisor/employees", data)
+      const newEmployee = response.data.data || response.data
       
       set((state) => ({
         employees: [...state.employees, newEmployee],
         isLoading: false,
       }))
-    } catch (error) {
-      set({ error: (error as Error).message, isLoading: false })
-      throw error // Re-throw for form handling
+    } catch (error: any) {
+      const message = error.response?.data?.message || error.message
+      set({ error: message, isLoading: false })
+      throw new Error(message)
     }
   },
 
   updateEmployee: async (id: string, data: Partial<Employee>) => {
     set({ isLoading: true, error: null })
     try {
-      const response = await fetch(`/api/employees/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      })
-      
-      if (!response.ok) throw new Error("Failed to update employee")
-      const updatedEmployee = await response.json()
+      const response = await api.patch(`/supervisor/employees/${id}`, data)
+      const updatedEmployee = response.data.data || response.data
       
       set((state) => ({
         employees: state.employees.map((emp) => 
@@ -77,28 +66,26 @@ export const useEmployeeStore = create<EmployeeStore>((set, get) => ({
         ),
         isLoading: false,
       }))
-    } catch (error) {
-      set({ error: (error as Error).message, isLoading: false })
-      throw error
+    } catch (error: any) {
+      const message = error.response?.data?.message || error.message
+      set({ error: message, isLoading: false })
+      throw new Error(message)
     }
   },
 
   deleteEmployee: async (id: string) => {
     set({ isLoading: true, error: null })
     try {
-      const response = await fetch(`/api/employees/${id}`, {
-        method: "DELETE",
-      })
-      
-      if (!response.ok) throw new Error("Failed to delete employee")
+      await api.delete(`/supervisor/employees/${id}`)
       
       set((state) => ({
         employees: state.employees.filter((emp) => emp.id !== id),
         isLoading: false,
       }))
-    } catch (error) {
-      set({ error: (error as Error).message, isLoading: false })
-      throw error
+    } catch (error: any) {
+      const message = error.response?.data?.message || error.message
+      set({ error: message, isLoading: false })
+      throw new Error(message)
     }
   },
 
@@ -108,17 +95,12 @@ export const useEmployeeStore = create<EmployeeStore>((set, get) => ({
   setPassword: async (token: string, password: string) => {
     set({ isLoading: true, error: null })
     try {
-      const response = await fetch("/api/employees/set-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, password }),
-      })
-      
-      if (!response.ok) throw new Error("Failed to set password")
+      await api.post("/supervisor/employees/set-password", { token, password })
       set({ isLoading: false })
-    } catch (error) {
-      set({ error: (error as Error).message, isLoading: false })
-      throw error
+    } catch (error: any) {
+      const message = error.response?.data?.message || error.message
+      set({ error: message, isLoading: false })
+      throw new Error(message)
     }
   },
 }))

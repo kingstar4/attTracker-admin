@@ -10,6 +10,9 @@ import {
   MapPin,
 } from "lucide-react";
 import { useAttendanceStore } from "@/store/useAttendanceStore";
+import { useEmployeeStore } from "@/store/useEmployeeStore";
+import { useAuthStore } from "@/store/useAuthStore";
+import { useEffect } from "react";
 import { AttendanceChart } from "./components/AttendanceChart";
 import { DepartmentChart } from "./components/DepartmentChart";
 import { StatusPieChart } from "./components/StatusPieChart";
@@ -17,15 +20,20 @@ import { RecentActivity } from "./components/RecentActivity";
 import { EmployeeStatusList } from "./components/EmployeeStatusList";
 import { QuickActions } from "./components/QuickActions";
 import { AlertsPanel } from "./components/AlertsPanel";
+import { TodayAttendance } from "./components/TodayAttendance";
 
 export function SupervisorDashboard() {
-  const { employees, attendanceRecords } = useAttendanceStore();
+  const { employees, fetchEmployees } = useEmployeeStore();
+  const { attendanceRecords } = useAttendanceStore();
+  const { user } = useAuthStore();
 
-  const employeesIn = employees.filter((emp) => emp.status === "in").length;
-  const employeesOut = employees.filter((emp) => emp.status === "out").length;
-  const employeesOnBreak = employees.filter(
-    (emp) => emp.status === "break"
-  ).length;
+  useEffect(() => {
+    fetchEmployees();
+  }, [fetchEmployees]);
+
+  const activeEmployees = employees.filter((emp) => emp.is_active).length;
+  const inactiveEmployees = employees.filter((emp) => !emp.is_active).length;
+  const employeesOnLeave = 0; // This will need to be updated when the leave system is implemented
   const todayRecords = attendanceRecords.filter((record) => {
     const today = new Date();
     const recordDate = new Date(record.timestamp);
@@ -42,20 +50,20 @@ export function SupervisorDashboard() {
       changeType: "positive" as const,
     },
     {
-      title: "Currently In",
-      value: employeesIn,
+      title: "Active Employees",
+      value: activeEmployees,
       icon: UserCheck,
       color: "text-green-600",
-      change: `${Math.round((employeesIn / employees.length) * 100)}% attendance`,
-      changeType: "neutral" as const,
+      change: `${Math.round((activeEmployees / employees.length) * 100)}% of total`,
+      changeType: "positive" as const,
     },
     {
-      title: "On Break",
-      value: employeesOnBreak,
-      icon: Clock,
-      color: "text-yellow-600",
-      change: "Average 15 min",
-      changeType: "neutral" as const,
+      title: "Inactive Employees",
+      value: inactiveEmployees,
+      icon: Users,
+      color: "text-red-600",
+      change: `${Math.round((inactiveEmployees / employees.length) * 100)}% of total`,
+      changeType: "negative" as const,
     },
     {
       title: "Today's Records",
@@ -81,17 +89,16 @@ export function SupervisorDashboard() {
         return acc;
       }, 0) * 8; // Approximate hours
 
-  const enrollmentRate = Math.round(
-    (employees.filter((emp) => emp.fingerprintEnrolled).length /
-      employees.length) *
-      100
-  );
+  // We'll need to update this once fingerprint enrollment status is added to the API
+  const enrollmentRate = 0;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+          <h1 className="text-3xl font-bold text-foreground">
+            Welcome, {user?.firstName || "Supervisor"}
+          </h1>
           <p className="text-muted-foreground flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             {new Date().toLocaleDateString("en-US", {
@@ -122,7 +129,7 @@ export function SupervisorDashboard() {
                 className={`text-xs ${
                   stat.changeType === "positive"
                     ? "text-green-600"
-                    : stat.changeType === "neutral"
+                    : stat.changeType === "negative"
                       ? "text-red-600"
                       : "text-muted-foreground"
                 }`}
@@ -152,7 +159,7 @@ export function SupervisorDashboard() {
           </Card>
 
           {/* Department Distribution */}
-          <Card>
+          {/* <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
@@ -162,7 +169,10 @@ export function SupervisorDashboard() {
             <CardContent>
               <DepartmentChart employees={employees} />
             </CardContent>
-          </Card>
+          </Card> */}
+
+          {/* Today's Attendance */}
+          <TodayAttendance />
         </div>
 
         <div className="space-y-6">

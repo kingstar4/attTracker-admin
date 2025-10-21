@@ -12,11 +12,11 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { AddEmployeeForm } from "../../employees/components/AddEmployeeForm";
-import { useEmployeeStore } from "@/store/useEmployeeStore";
+// import { useEmployeeStore } from "@/store/useEmployeeStore";
 
 export function QuickActions() {
   const router = useRouter();
-  const { fetchEmployees } = useEmployeeStore();
+  // const { fetchEmployees } = useEmployeeStore();
 
   return (
     <div className="flex items-center gap-2">
@@ -27,7 +27,7 @@ export function QuickActions() {
             Add Employee
           </Button>
         }
-        onSuccess={() => fetchEmployees()}
+        // onSuccess={() => fetchEmployees()}
       />
       <Button variant="outline" size="sm">
         <Download className="h-4 w-4" />
