@@ -1,6 +1,6 @@
 "use client";
 
-import { User, LogOut, Settings } from "lucide-react";
+import { User, LogOut, Settings, User2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -29,7 +29,9 @@ export function AdminMenu() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarFallback>AD</AvatarFallback>
+            <AvatarFallback>
+              <User2 className="h-4 w-4" />
+            </AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>

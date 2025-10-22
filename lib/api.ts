@@ -1,7 +1,8 @@
 import axios, { AxiosInstance } from "axios";
 
+const BASE_URL= process.env.NEXT_PUBLIC_API_BASE_URL;
 const api: AxiosInstance = axios.create({
-  baseURL: "https://employee-tracker.duckdns.org/api",
+  baseURL: BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },

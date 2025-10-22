@@ -2,6 +2,7 @@
 
 import { create } from "zustand"
 import api from "@/lib/api"
+import { useEmployeeStore } from "./useEmployeeStore"
 
 export interface LeaveRequest {
   id: string
@@ -91,6 +92,7 @@ export const useSupervisorStore = create<SupervisorState>((set, get) => ({
     try {
       const response = await api.get("/supervisor/attendance/today")
       set({ todayAttendance: response.data.data || response.data })
+    
     } catch (error: any) {
       const message = error.response?.data?.message || error.message
       set({ error: message })

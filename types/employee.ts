@@ -5,6 +5,7 @@ export interface Employee {
   first_name: string
   last_name: string
   email: string
+  email_verified: boolean
   phone_number: string
   address: string
   nin: string

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSupervisorStore } from "@/store/useSupervisorStore";
 import {
@@ -11,6 +11,7 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
+import { useEmployeeStore } from "@/store/useEmployeeStore";
 
 // Define colors for each status
 const STATUS_COLORS = {
@@ -22,23 +23,33 @@ const STATUS_COLORS = {
 
 export function StatusPieChart() {
   const { todayAttendance, fetchTodayAttendance } = useSupervisorStore();
+  const { employees } = useEmployeeStore();
+  const verifiedEmployeeEmails = useMemo(
+    () => employees.filter((emp) => emp.email_verified).map((emp) => emp.email),
+    [employees]
+  );
 
   useEffect(() => {
     fetchTodayAttendance();
   }, [fetchTodayAttendance]);
 
   if (!todayAttendance?.employees) return null;
+  if (!verifiedEmployeeEmails.length) return null;
 
-  const presentCount = todayAttendance.employees.filter(
+  const verifiedAttendance = todayAttendance.employees.filter((emp) =>
+    verifiedEmployeeEmails.includes(emp.email)
+  );
+
+  const presentCount = verifiedAttendance.filter(
     (e) => e.status === "present"
   ).length;
-  const absentCount = todayAttendance.employees.filter(
+  const absentCount = verifiedAttendance.filter(
     (e) => e.status === "absent"
   ).length;
-  const onBreakCount = todayAttendance.employees.filter(
+  const onBreakCount = verifiedAttendance.filter(
     (e) => e.status === "on_break"
   ).length;
-  const onLeaveCount = todayAttendance.employees.filter(
+  const onLeaveCount = verifiedAttendance.filter(
     (e) => e.status === "on_leave"
   ).length;
 

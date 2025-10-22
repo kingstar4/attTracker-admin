@@ -33,6 +33,9 @@ export function SupervisorDashboard() {
 
   const activeEmployees = employees.filter((emp) => emp.is_active).length;
   const inactiveEmployees = employees.filter((emp) => !emp.is_active).length;
+  const verifiedEmployees = employees.filter(
+    (emp) => emp.email_verified
+  ).length;
   const employeesOnLeave = 0; // This will need to be updated when the leave system is implemented
   const todayRecords = attendanceRecords.filter((record) => {
     const today = new Date();
@@ -43,7 +46,7 @@ export function SupervisorDashboard() {
   const stats = [
     {
       title: "Total Employees",
-      value: employees.length,
+      value: verifiedEmployees,
       icon: Users,
       color: "text-blue-600",
       change: "+2 this week",

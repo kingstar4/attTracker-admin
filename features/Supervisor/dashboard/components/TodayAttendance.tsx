@@ -14,9 +14,19 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { format } from "date-fns";
+import { useEmployeeStore } from "@/store/useEmployeeStore";
 
 export function TodayAttendance() {
   const { todayAttendance, fetchTodayAttendance } = useSupervisorStore();
+  const { employees } = useEmployeeStore();
+  const verifiedEmployeeEmails = useMemo(
+    () => employees.filter((emp) => emp.email_verified).map((emp) => emp.email),
+    [employees]
+  );
+
+  const verifiedEmployees = employees.filter(
+    (emp) => emp.email_verified
+  ).length;
 
   useEffect(() => {
     fetchTodayAttendance();
@@ -28,16 +38,22 @@ export function TodayAttendance() {
   const stats = useMemo(() => {
     if (!todayAttendance) return null;
 
-    const present = todayAttendance.employees.filter(
+    if (verifiedEmployees === 0) return null;
+
+    const verifiedAttendance = todayAttendance.employees.filter((emp) =>
+      verifiedEmployeeEmails.includes(emp.email)
+    );
+
+    const present = verifiedAttendance.filter(
       (e) => e.status === "present"
     ).length;
-    const absent = todayAttendance.employees.filter(
+    const absent = verifiedAttendance.filter(
       (e) => e.status === "absent"
     ).length;
-    const onBreak = todayAttendance.employees.filter(
+    const onBreak = verifiedAttendance.filter(
       (e) => e.status === "on_break"
     ).length;
-    const total = todayAttendance.employees.length;
+    const total = verifiedAttendance.length;
     const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
 
     return { present, absent, onBreak, total, percentage };
@@ -115,39 +131,41 @@ export function TodayAttendance() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {todayAttendance.employees.map((employee) => (
-                <TableRow key={employee.id}>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">{employee.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {employee.email}
-                      </p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor(employee.status)}>
-                      {employee.status.replace("_", " ")}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{employee.clock_in_time || "-"}</TableCell>
-                  <TableCell>{employee.clock_out_time || "-"}</TableCell>
-                  <TableCell>
-                    {employee.method ? (
-                      <div className="flex items-center gap-1">
-                        {employee.method === "fingerprint" ? (
-                          <Fingerprint className="h-4 w-4" />
-                        ) : (
-                          <KeyRound className="h-4 w-4" />
-                        )}
-                        <span className="capitalize">{employee.method}</span>
+              {todayAttendance.employees
+                .filter((emp) => verifiedEmployeeEmails.includes(emp.email))
+                .map((employee) => (
+                  <TableRow key={employee.id}>
+                    <TableCell>
+                      <div>
+                        <p className="font-medium">{employee.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {employee.email}
+                        </p>
                       </div>
-                    ) : (
-                      "-"
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={getStatusColor(employee.status)}>
+                        {employee.status.replace("_", " ")}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{employee.clock_in_time || "-"}</TableCell>
+                    <TableCell>{employee.clock_out_time || "-"}</TableCell>
+                    <TableCell>
+                      {employee.method ? (
+                        <div className="flex items-center gap-1">
+                          {employee.method === "fingerprint" ? (
+                            <Fingerprint className="h-4 w-4" />
+                          ) : (
+                            <KeyRound className="h-4 w-4" />
+                          )}
+                          <span className="capitalize">{employee.method}</span>
+                        </div>
+                      ) : (
+                        "-"
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
             </TableBody>
           </Table>
         </div>
