@@ -202,7 +202,13 @@ export function Layout({ children }: LayoutProps) {
   }, [hasUser, checkingAuth]);
 
   useEffect(() => {
-    if (checkingAuth) {
+    if (!hasUser) {
+      lastRouteKeyRef.current = null;
+    }
+  }, [hasUser]);
+
+  useEffect(() => {
+    if (checkingAuth || showFreshLoginLoading) {
       return;
     }
 
@@ -233,7 +239,13 @@ export function Layout({ children }: LayoutProps) {
       setShowPageLoading(false);
       routeLoadingTimeoutRef.current = null;
     }, 1000);
-  }, [pathname, searchParamsKey, hasUser, checkingAuth]);
+  }, [
+    pathname,
+    searchParamsKey,
+    hasUser,
+    checkingAuth,
+    showFreshLoginLoading,
+  ]);
 
   if (checkingAuth) {
     return <Validating />;
