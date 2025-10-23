@@ -11,13 +11,14 @@ import {
   CalendarX2,
   User,
   KeyRound,
+  List,
 } from "lucide-react"
 
 export const navigation = {
   owner: [
     { icon: LayoutDashboard, label: "Dashboard", to: "/owner" },
     // { icon: Building2, label: "Projects / Sites", to: "/owner/projects" },
-    // { icon: Users, label: "Supervisors", to: "/owner/supervisors" },
+    { icon: Users, label: "Supervisors", to: "/owner/supervisors" },
     // { icon: UsersRound, label: "Employees", to: "/owner/employees" },
     // { icon: Clock, label: "Attendance Logs", to: "/owner/attendance" },
     { icon: Mail, label: "Invitations", to: "/owner/invitations" },

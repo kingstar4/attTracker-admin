@@ -1,26 +1,49 @@
-"use client"
+"use client";
 
-import { useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { useEmployeeModuleStore } from "@/store/useEmployeeModuleStore"
-import { Mail, Phone, MapPin, User, ShieldCheck, Users, Calendar } from "lucide-react"
+import { useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { useEmployeeModuleStore } from "@/store/useEmployeeModuleStore";
+import {
+  Mail,
+  Phone,
+  MapPin,
+  User,
+  ShieldCheck,
+  Users,
+  Calendar,
+} from "lucide-react";
 
-const InfoRow = ({ label, value }: { label: string; value?: string | null }) => (
+type Props = {
+  employeeId?: string;
+};
+const InfoRow = ({
+  label,
+  value,
+}: {
+  label: string;
+  value?: string | null;
+}) => (
   <div className="flex flex-col gap-1">
-    <span className="text-xs uppercase tracking-wide text-muted-foreground">{label}</span>
-    <span className="text-sm font-medium text-foreground">{value || "Not provided"}</span>
+    <span className="text-xs uppercase tracking-wide text-muted-foreground">
+      {label}
+    </span>
+    <span className="text-sm font-medium text-foreground">
+      {value || "Not provided"}
+    </span>
   </div>
-)
+);
 
-export function EmployeeProfile() {
-  const fetchEmployeeProfile = useEmployeeModuleStore((state) => state.fetchEmployeeProfile)
-  const { employee, profileLoading, profileError } = useEmployeeModuleStore()
+export function EmployeeProfile({ employeeId }: Props) {
+  const fetchEmployeeProfile = useEmployeeModuleStore(
+    (state) => state.fetchEmployeeProfile
+  );
+  const { employee, profileLoading, profileError } = useEmployeeModuleStore();
 
   useEffect(() => {
-    void fetchEmployeeProfile()
-  }, [fetchEmployeeProfile])
+    void fetchEmployeeProfile();
+  }, [fetchEmployeeProfile]);
 
   if (profileLoading && !employee) {
     return (
@@ -44,23 +67,25 @@ export function EmployeeProfile() {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   if (profileError && !employee) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-destructive">Unable to load profile</CardTitle>
+          <CardTitle className="text-destructive">
+            Unable to load profile
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground text-sm">{profileError}</p>
         </CardContent>
       </Card>
-    )
+    );
   }
 
-  if (!employee) return null
+  if (!employee) return null;
 
   return (
     <div className="space-y-6">
@@ -69,13 +94,18 @@ export function EmployeeProfile() {
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <User className="h-6 w-6 text-primary" />
-              <CardTitle className="text-2xl">{employee.fullName || `${employee.firstName} ${employee.lastName}`}</CardTitle>
+              <CardTitle className="text-2xl">
+                {employee.fullName ||
+                  `${employee.firstName} ${employee.lastName}`}
+              </CardTitle>
             </div>
             <div className="flex flex-wrap gap-2">
               <Badge variant={employee.isActive ? "secondary" : "destructive"}>
                 {employee.isActive ? "Active" : "Inactive"}
               </Badge>
-              {employee.emailVerified && <Badge variant="outline">Email Verified</Badge>}
+              {employee.emailVerified && (
+                <Badge variant="outline">Email Verified</Badge>
+              )}
             </div>
           </div>
           <div className="flex flex-col gap-2 text-sm text-muted-foreground">
@@ -148,7 +178,10 @@ export function EmployeeProfile() {
                 Emergency Contact
               </h3>
               <InfoRow label="Name" value={employee.emergencyContactName} />
-              <InfoRow label="Phone Number" value={employee.emergencyContactPhone} />
+              <InfoRow
+                label="Phone Number"
+                value={employee.emergencyContactPhone}
+              />
             </div>
           </CardContent>
         </Card>
@@ -165,9 +198,12 @@ export function EmployeeProfile() {
           <InfoRow label="Email" value={employee.email} />
           <InfoRow label="Phone" value={employee.phoneNumber} />
           <InfoRow label="Address" value={employee.address} />
-          <InfoRow label="Status" value={employee.isActive ? "Active" : "Inactive"} />
+          <InfoRow
+            label="Status"
+            value={employee.isActive ? "Active" : "Inactive"}
+          />
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

@@ -67,7 +67,7 @@ export function AttendanceChart() {
   const chartData = generateChartData();
 
   return (
-    <Card className="col-span-full lg:col-span-2">
+    <Card className="col-span-full md:col-span-2 lg:col-span-2">
       <CardHeader>
         <CardTitle>Attendance Trend</CardTitle>
         <CardDescription>
@@ -84,24 +84,90 @@ export function AttendanceChart() {
         ) : (
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis domain={[0, 100]} />
-              <Tooltip
-                formatter={(value: number) => {
-                  if (value === 100) return ["Present", "Status"]
-                  if (value === 75) return ["Late", "Status"]
-                  if (value === 50) return ["On Leave", "Status"]
-                  if (value === 0) return ["Absent", "Status"]
-                  return ["Unknown", "Status"]
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="hsl(var(--muted-foreground))"
+                opacity={0.2}
+              />
+              <XAxis
+                dataKey="date"
+                stroke="hsl(var(--foreground))"
+                style={{
+                  fontSize: "12px",
+                  fontWeight: "500",
                 }}
+                tick={{
+                  fill: "currentColor",
+                  className: "text-foreground",
+                }}
+              />
+              <YAxis
+                domain={[0, 100]}
+                stroke="hsl(var(--foreground))"
+                style={{
+                  fontSize: "12px",
+                  fontWeight: "500",
+                }}
+                tick={{
+                  fill: "currentColor",
+                  className: "text-foreground",
+                }}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "hsl(var(--background))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "6px",
+                  color: "hsl(var(--foreground))",
+                }}
+                formatter={(value: number) => {
+                  if (value === 100) return ["Present", "Status"];
+                  if (value === 75) return ["Late", "Status"];
+                  if (value === 50) return ["On Leave", "Status"];
+                  if (value === 0) return ["Absent", "Status"];
+                  return ["Unknown", "Status"];
+                }}
+                labelStyle={{ color: "hsl(var(--foreground))" }}
               />
               <Line
                 type="monotone"
                 dataKey="statusScore"
-                stroke="hsl(var(--primary))"
+                stroke="#22c55e"
                 strokeWidth={2}
-                dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4 }}
+                dot={(props) => {
+                  const value = props.payload.statusScore;
+                  let color;
+                  switch (value) {
+                    case 100:
+                      color = "#22c55e"; // green for present
+                      break;
+                    case 75:
+                      color = "#eab308"; // yellow for late
+                      break;
+                    case 50:
+                      color = "#3b82f6"; // blue for leave
+                      break;
+                    case 0:
+                      color = "#ef4444"; // red for absent
+                      break;
+                    default:
+                      color = "#94a3b8"; // gray for unknown
+                  }
+                  return (
+                    <circle
+                      key={
+                        props.payload?.fullDate ??
+                        `dot-${props.cx}-${props.cy ?? 0}`
+                      }
+                      cx={props.cx}
+                      cy={props.cy}
+                      r={4}
+                      fill={color}
+                      stroke="hsl(var(--background))"
+                      strokeWidth={2}
+                    />
+                  );
+                }}
               />
             </LineChart>
           </ResponsiveContainer>

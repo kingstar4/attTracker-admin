@@ -1,10 +1,8 @@
 "use client"
 
 import {
-  useSiteLocationStore,
   DEFAULT_SITE_LOCATION,
-  getStoredSiteLocation,
-  getSupervisorSiteLocation,
+  getEffectiveSiteLocation,
   type SiteLocation,
 } from "@/store/useSiteLocationStore"
 
@@ -35,23 +33,6 @@ export function isWithinGeofence(
   return distance <= radiusMeters
 }
 
-export const getSiteLocation = (): SiteLocation => {
-  const supervisorLocation = getSupervisorSiteLocation()
-  if (supervisorLocation) {
-    return supervisorLocation
-  }
-
-  const storedLocation = getStoredSiteLocation()
-  if (storedLocation && storedLocation.source === "manual") {
-    return storedLocation
-  }
-
-  const currentStateLocation = useSiteLocationStore.getState().siteLocation
-  if (currentStateLocation.source === "manual") {
-    return currentStateLocation
-  }
-
-  return DEFAULT_SITE_LOCATION
-}
+export const getSiteLocation = (): SiteLocation => getEffectiveSiteLocation()
 
 export const getDefaultSiteLocation = (): SiteLocation => DEFAULT_SITE_LOCATION

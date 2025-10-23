@@ -58,7 +58,7 @@ export function InvitationsList() {
   };
 
   const formatDate = (value?: string) => {
-    if (!value) return "—";
+    if (!value) return "N/A";
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
     return date.toLocaleDateString(undefined, {
@@ -70,71 +70,6 @@ export function InvitationsList() {
 
   return (
     <div className="space-y-6">
-      <Card className="p-4 sm:p-5">
-        <div className="mb-4">
-          <h3 className="text-sm font-semibold">Invitations</h3>
-          <p className="text-xs text-muted-foreground">
-            Pending and accepted invitations
-          </p>
-        </div>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Project</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Date Sent</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {invites.map((inv) => (
-                <TableRow key={inv.id}>
-                  <TableCell>
-                    {[inv.first_name, inv.last_name]
-                      .filter(Boolean)
-                      .join(" ") || "—"}
-                  </TableCell>
-                  <TableCell>{inv.email}</TableCell>
-                  <TableCell className="capitalize">{inv.role}</TableCell>
-                  <TableCell>{inv.projectName || "—"}</TableCell>
-                  <TableCell>
-                    <Badge
-                      className={statusColor[inv.status]}
-                      variant="secondary"
-                    >
-                      {inv.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{new Date(inv.sentAt).toLocaleString()}</TableCell>
-                  <TableCell className="text-right space-x-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={loading || inv.status !== "pending"}
-                      onClick={() => handleResend(inv.id)}
-                    >
-                      Resend
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      disabled={loading || inv.status !== "pending"}
-                      onClick={() => handleRevoke(inv.id)}
-                    >
-                      Revoke
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </Card>
-
       <Card className="p-4 sm:p-5">
         <div className="mb-4">
           <h3 className="text-sm font-semibold">Supervisors by Status</h3>
@@ -149,13 +84,13 @@ export function InvitationsList() {
             {supervisorsError}
           </div>
         ) : null}
-        <div className="overflow-x-auto">
+        <div className="hidden overflow-x-auto md:block">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Supervisor</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Created</TableHead>
+                {/* <TableHead>Created</TableHead> */}
                 <TableHead>Status</TableHead>
                 <TableHead>Employees</TableHead>
               </TableRow>
@@ -171,8 +106,8 @@ export function InvitationsList() {
                 supervisors.map((supervisor) => (
                   <TableRow key={supervisor.id}>
                     <TableCell>{supervisor.name}</TableCell>
-                    <TableCell>{supervisor.email || "—"}</TableCell>
-                    <TableCell>{formatDate(supervisor.createdAt)}</TableCell>
+                    <TableCell>{supervisor.email || "N/A"}</TableCell>
+                    {/* <TableCell>{formatDate(supervisor.createdAt)}</TableCell> */}
                     <TableCell>
                       <Badge
                         variant={
@@ -200,6 +135,54 @@ export function InvitationsList() {
               )}
             </TableBody>
           </Table>
+        </div>
+        <div className="space-y-3 md:hidden">
+          {supervisorsLoading && supervisors.length === 0 ? (
+            <div className="space-y-2">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="h-24 animate-pulse rounded-lg bg-muted"
+                />
+              ))}
+            </div>
+          ) : supervisors.length > 0 ? (
+            supervisors.map((supervisor) => (
+              <div
+                key={supervisor.id}
+                className="rounded-lg border border-border/70 bg-background p-4 shadow-sm"
+              >
+                <div className="flex flex-col gap-3">
+                  <div>
+                    <p className="text-sm font-semibold">{supervisor.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {supervisor.email || "N/A"}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge
+                      variant={
+                        supervisor.status === "verified"
+                          ? "default"
+                          : "secondary"
+                      }
+                      className="capitalize"
+                    >
+                      {supervisor.status}
+                    </Badge>
+                    <div className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                      {supervisor.employees.length} employee
+                      {supervisor.employees.length === 1 ? "" : "s"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="text-center text-sm text-muted-foreground">
+              No supervisor records were returned.
+            </p>
+          )}
         </div>
       </Card>
     </div>

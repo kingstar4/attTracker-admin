@@ -39,7 +39,9 @@ interface OwnerDashboardState {
   error: string | null
   stats: OrganizationStats | null
   pendingLeaves: PendingLeave[]
+  leaveRequests: PendingLeave[]
   recentAttendance: AttendanceRecord[]
+  pendingLeaveCount: number
   fetchAll: () => Promise<void>
 }
 
@@ -55,7 +57,9 @@ export const useOwnerDashboardStore = create<OwnerDashboardState>((set) => ({
   error: null,
   stats: null,
   pendingLeaves: [],
+  leaveRequests: [],
   recentAttendance: [],
+  pendingLeaveCount: 0,
 
   fetchAll: async () => {
     set({ loading: true, error: null })
@@ -63,10 +67,123 @@ export const useOwnerDashboardStore = create<OwnerDashboardState>((set) => ({
       const response = await api.get("/owner/dashboard")
       const payload = response.data?.data ?? response.data ?? {}
 
+      const toLeaveRecord = (item: unknown, index: number): PendingLeave => {
+        if (!item || typeof item !== "object") {
+          return { id: `${index}` }
+        }
+        const record = item as Record<string, unknown>
+
+        const safeString = (value: unknown, fallback = ""): string => {
+          if (value === undefined || value === null) return fallback
+          if (typeof value === "string") return value
+          if (typeof value === "number" && Number.isFinite(value)) return String(value)
+          return fallback
+        }
+
+        const normalizeStatus = (value: unknown): string => {
+          const raw = safeString(value).toLowerCase()
+          if (raw.includes("approve")) return "approved"
+          if (raw.includes("reject")) return "rejected"
+          if (raw.includes("pending")) return "pending"
+          return raw || "pending"
+        }
+
+        return {
+          id: safeString(
+            record.id ??
+              record.leave_id ??
+              record.request_id ??
+              record.uuid ??
+              record.reference ??
+              `${index}`,
+          ),
+          employee_name: safeString(
+            record.employee_name ??
+              record.employee ??
+              record.staff_name ??
+              record.user_name ??
+              "",
+          ),
+          leave_type: safeString(
+            record.leave_type ??
+              record.type ??
+              record.category ??
+              record.reason_type ??
+              "Leave",
+          ),
+          start_date: safeString(
+            record.start_date ??
+              record.startDate ??
+              record.begin_date ??
+              record.leave_start ??
+              "",
+          ),
+          end_date: safeString(
+            record.end_date ??
+              record.endDate ??
+              record.finish_date ??
+              record.leave_end ??
+              "",
+          ),
+          status: normalizeStatus(
+            record.status ?? record.leave_status ?? record.approval_status,
+          ),
+          reason: safeString(record.reason ?? record.description ?? ""),
+          created_at: safeString(
+            record.created_at ??
+              record.requested_at ??
+              record.updated_at ??
+              record.submitted_at ??
+              "",
+          ),
+        }
+      }
+
+      const resolveLeaveArray = (source: unknown): PendingLeave[] => {
+        if (!Array.isArray(source)) return []
+        return source.map((item, index) => toLeaveRecord(item, index))
+      }
+
+      const leaveRequestsRaw =
+        resolveLeaveArray(payload.leave_requests) ??
+        resolveLeaveArray(payload.recent_leave_requests)
+
+      const pendingLeavesRaw = resolveLeaveArray(payload.pending_leaves)
+      const leaveRequests =
+        leaveRequestsRaw.length > 0
+          ? leaveRequestsRaw
+          : pendingLeavesRaw
+
+      const pendingLeaves =
+        pendingLeavesRaw.length > 0
+          ? pendingLeavesRaw
+          : leaveRequests.filter(
+              (leave) => leave.status?.toLowerCase() === "pending",
+            )
+
+      const statsSource = payload.organization_stats ?? defaultStats
+      const derivePendingCount = (): number => {
+        const raw =
+          statsSource?.pending_leave_requests ??
+          payload.pending_leave_requests ??
+          payload.pending_leaves_count
+
+        if (typeof raw === "number" && Number.isFinite(raw)) return raw
+        if (typeof raw === "string" && raw.trim() !== "") {
+          const parsed = Number(raw)
+          if (Number.isFinite(parsed)) return parsed
+        }
+        return pendingLeaves.length
+      }
+
       set({
-        stats: payload.organization_stats ?? defaultStats,
-        pendingLeaves: Array.isArray(payload.pending_leaves) ? payload.pending_leaves : [],
-        recentAttendance: Array.isArray(payload.recent_attendance) ? payload.recent_attendance : [],
+        stats: statsSource ?? defaultStats,
+        pendingLeaves,
+        leaveRequests,
+        recentAttendance: Array.isArray(payload.recent_attendance)
+          ? payload.recent_attendance
+          : [],
+        pendingLeaveCount: derivePendingCount(),
         loading: false,
         error: null,
       })
@@ -78,7 +195,9 @@ export const useOwnerDashboardStore = create<OwnerDashboardState>((set) => ({
       set({
         stats: defaultStats,
         pendingLeaves: [],
+        leaveRequests: [],
         recentAttendance: [],
+        pendingLeaveCount: 0,
         loading: false,
         error: isNetworkError ? null : message,
       })

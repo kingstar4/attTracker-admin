@@ -22,6 +22,7 @@ export interface EmployeeProfile {
   emergencyContactPhone?: string
   nin?: string
   createdAt?: string
+  supervisorId?: string
   supervisorName?: string
   supervisorPhone?: string
 }
@@ -114,6 +115,37 @@ const normaliseDate = (value: unknown): string => {
   return date.toISOString().split("T")[0] ?? ""
 }
 
+const extractArray = (value: unknown, depth = 0): unknown[] => {
+  if (Array.isArray(value)) return value
+  if (!value || typeof value !== "object" || depth >= 3) return []
+
+  const record = value as Record<string, unknown>
+  const keysToInspect = [
+    "data",
+    "items",
+    "results",
+    "list",
+    "rows",
+    "records",
+    "requests",
+    "leave_requests",
+    "leaveRequests",
+    "pending_leave_requests",
+  ]
+
+  for (const key of keysToInspect) {
+    const nested = record[key]
+    if (nested === undefined) continue
+
+    const extracted = extractArray(nested, depth + 1)
+    if (extracted.length > 0) {
+      return extracted
+    }
+  }
+
+  return []
+}
+
 const safeMessage = (error: unknown): string => {
   if (typeof error === "string") return error
   if (error && typeof error === "object" && "message" in error) {
@@ -162,6 +194,10 @@ export const useEmployeeModuleStore = create<EmployeeState>()(
         try {
           const response = await api.get("/employee/dashboard")
           const payload = response.data?.data ?? response.data ?? {}
+          const payloadRecord =
+            !Array.isArray(payload) && payload && typeof payload === "object"
+              ? (payload as Record<string, unknown>)
+              : null
 
           const summaryRaw = payload.attendance_summary ?? {}
           const attendanceSummary: AttendanceSummary | null =
@@ -225,11 +261,12 @@ export const useEmployeeModuleStore = create<EmployeeState>()(
             },
           )
 
-          const pendingLeaveRaw: unknown[] = Array.isArray(
-            payload.pending_leave_requests,
-          )
-            ? payload.pending_leave_requests
-            : []
+          const pendingLeaveSource =
+            payloadRecord?.["pending_leave_requests"] ??
+            payloadRecord?.["leave_requests"] ??
+            payloadRecord?.["leaveRequests"] ??
+            []
+          const pendingLeaveRaw: unknown[] = extractArray(pendingLeaveSource)
 
           const pendingLeaveRequests: LeaveRequest[] = pendingLeaveRaw.map(
             (item, index) => {
@@ -306,6 +343,105 @@ export const useEmployeeModuleStore = create<EmployeeState>()(
             safeString(payload.full_name ?? payload.fullName ?? "").trim() ||
             [firstName, lastName].filter(Boolean).join(" ").trim()
 
+          let supervisorName = safeString(
+            supervisor?.full_name ??
+              supervisor?.name ??
+              supervisor?.supervisor_name ??
+              "",
+          )
+          let supervisorPhone = safeString(
+            supervisor?.phone_number ??
+              supervisor?.phone ??
+              supervisor?.supervisor_phone ??
+              "",
+          )
+
+          if (!supervisorName || !supervisorPhone) {
+            try {
+              const debugResponse = await api.get("/debug/db-info")
+              const debugPayload = debugResponse.data?.data ?? debugResponse.data ?? []
+
+              if (Array.isArray(debugPayload)) {
+                for (const record of debugPayload) {
+                  if (!record || typeof record !== "object") continue
+                  const entry = record as Record<string, unknown>
+
+                  const employeesRaw = Array.isArray(entry.employees)
+                    ? entry.employees
+                    : Array.isArray((entry as any)?.employees?.items)
+                      ? (entry as any).employees.items
+                      : []
+                  const supervisorsRaw = Array.isArray(entry.supervisors)
+                    ? entry.supervisors
+                    : Array.isArray((entry as any)?.supervisors?.items)
+                      ? (entry as any).supervisors.items
+                      : []
+
+                  let matchedSupervisorId: string | null = null
+
+                  for (const emp of employeesRaw) {
+                    if (!emp || typeof emp !== "object") continue
+                    const candidate = emp as Record<string, unknown>
+                    const idMatch =
+                      safeString(candidate.id) &&
+                      safeString(candidate.id) === safeString(payload.id)
+                    const emailMatch =
+                      safeString(candidate.email).toLowerCase() &&
+                      safeString(candidate.email).toLowerCase() ===
+                        safeString(payload.email).toLowerCase()
+
+                    if (idMatch || emailMatch) {
+                      matchedSupervisorId = safeString(
+                        candidate.supervisor_id ?? candidate.supervisorId ?? "",
+                      )
+                      break
+                    }
+                  }
+
+                  if (!matchedSupervisorId) {
+                    continue
+                  }
+
+                  for (const sup of supervisorsRaw) {
+                    if (!sup || typeof sup !== "object") continue
+                    const supervisorCandidate = sup as Record<string, unknown>
+                    const supervisorId = safeString(
+                      supervisorCandidate.id ??
+                        supervisorCandidate.supervisor_id ??
+                        supervisorCandidate.uuid ??
+                        supervisorCandidate.user_id ??
+                        "",
+                    )
+
+                    if (supervisorId && supervisorId === matchedSupervisorId) {
+                      supervisorName =
+                        supervisorName ||
+                        safeString(
+                          supervisorCandidate.full_name ??
+                            supervisorCandidate.name ??
+                            supervisorCandidate.supervisor_name ??
+                            "",
+                        )
+                      supervisorPhone =
+                        supervisorPhone ||
+                        safeString(
+                          supervisorCandidate.phone_number ??
+                            supervisorCandidate.phone ??
+                            supervisorCandidate.supervisor_phone ??
+                            "",
+                        )
+                      break
+                    }
+                  }
+
+                  if (supervisorName || supervisorPhone) break
+                }
+              }
+            } catch (debugError) {
+              console.warn("Unable to enrich supervisor info from /debug/db-info", debugError)
+            }
+          }
+
           const employeeProfile: EmployeeProfile = {
             id: safeString(payload.id ?? ""),
             firstName,
@@ -332,18 +468,8 @@ export const useEmployeeModuleStore = create<EmployeeState>()(
             ),
             nin: safeString(payload.nin ?? ""),
             createdAt: safeString(payload.created_at ?? ""),
-            supervisorName: safeString(
-              supervisor?.full_name ??
-                supervisor?.name ??
-                supervisor?.supervisor_name ??
-                "",
-            ),
-            supervisorPhone: safeString(
-              supervisor?.phone_number ??
-                supervisor?.phone ??
-                supervisor?.supervisor_phone ??
-                "",
-            ),
+            supervisorName,
+            supervisorPhone,
           }
 
           set({
@@ -442,11 +568,7 @@ export const useEmployeeModuleStore = create<EmployeeState>()(
         try {
           const response = await api.get("/employee/leave-requests")
           const payload = response.data?.data ?? response.data ?? []
-          const requestsRaw: unknown[] = Array.isArray(payload)
-            ? payload
-            : Array.isArray(payload.items)
-              ? payload.items
-              : []
+          const requestsRaw: unknown[] = extractArray(payload)
 
           const requests: LeaveRequest[] = requestsRaw.map((item, index) => {
             const request = item as Record<string, unknown>

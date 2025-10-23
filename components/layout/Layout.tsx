@@ -2,14 +2,16 @@
 
 import type React from "react";
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Navbar } from "./Navbar";
 import { Sidebar } from "./Sidebar";
 // import { ThreeJSHeader } from "./ThreeJSHeader"
 import { useMediaQuery } from "@/hooks/use-mobile";
 import { useAuthStore, type AuthUser } from "@/store/useAuthStore";
 import { useSiteLocationStore } from "@/store/useSiteLocationStore";
+import Loading from "@/features/loading-state/Loading";
+import Validating from "@/features/loading-state/Validating";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -37,12 +39,30 @@ export function Layout({ children }: LayoutProps) {
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
   const siteLocation = useSiteLocationStore((state) => state.siteLocation);
-  const setSiteLocation = useSiteLocationStore((state) => state.setSiteLocation);
+  const setSiteLocation = useSiteLocationStore(
+    (state) => state.setSiteLocation
+  );
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [showFreshLoginLoading, setShowFreshLoginLoading] = useState(false);
+  const [showPageLoading, setShowPageLoading] = useState(false);
   const isMobile = useMediaQuery("(max-width: 768px)");
   const locationRequestedForUserRef = useRef<string | null>(null);
   const locationWatchIdRef = useRef<number | null>(null);
+  const routeLoadingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  const welcomeLoadingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  const hasShownWelcomeRef = useRef(false);
+  const lastRouteKeyRef = useRef<string | null>(null);
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const searchParamsKey = useMemo(
+    () => (searchParams ? searchParams.toString() : ""),
+    [searchParams]
+  );
 
   const hasUser = Boolean(user);
 
@@ -55,11 +75,13 @@ export function Layout({ children }: LayoutProps) {
     const storedUser = getStoredUser();
     const storedToken =
       typeof window !== "undefined"
-        ? sessionStorage.getItem("token") ?? localStorage.getItem("token")
+        ? (sessionStorage.getItem("token") ?? localStorage.getItem("token"))
         : null;
 
     if (storedUser && storedToken) {
       setUser(storedUser);
+      hasShownWelcomeRef.current = true;
+      setShowFreshLoginLoading(false);
       setCheckingAuth(false);
       return;
     }
@@ -69,12 +91,24 @@ export function Layout({ children }: LayoutProps) {
   }, [hasUser, setUser, router]);
 
   useEffect(() => {
+    return () => {
+      if (routeLoadingTimeoutRef.current) {
+        clearTimeout(routeLoadingTimeoutRef.current);
+      }
+      if (welcomeLoadingTimeoutRef.current) {
+        clearTimeout(welcomeLoadingTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (!hasUser || user?.role !== "supervisor") {
       return;
     }
 
     const userIdentifier = user?.id ?? user?.email ?? "supervisor";
-    const alreadyRequested = locationRequestedForUserRef.current === userIdentifier;
+    const alreadyRequested =
+      locationRequestedForUserRef.current === userIdentifier;
     const locationOutdated = siteLocation.source !== "supervisor";
 
     if (alreadyRequested && !locationOutdated) {
@@ -114,8 +148,16 @@ export function Layout({ children }: LayoutProps) {
       maximumAge: 60000,
     };
 
-    navigator.geolocation.getCurrentPosition(handleSuccess, handleError, options);
-    const watchId = navigator.geolocation.watchPosition(handleSuccess, handleError, options);
+    navigator.geolocation.getCurrentPosition(
+      handleSuccess,
+      handleError,
+      options
+    );
+    const watchId = navigator.geolocation.watchPosition(
+      handleSuccess,
+      handleError,
+      options
+    );
     locationWatchIdRef.current = watchId;
 
     return () => {
@@ -124,14 +166,85 @@ export function Layout({ children }: LayoutProps) {
         locationWatchIdRef.current = null;
       }
     };
-  }, [hasUser, user, siteLocation.radiusMeters, siteLocation.source, setSiteLocation]);
+  }, [
+    hasUser,
+    user,
+    siteLocation.radiusMeters,
+    siteLocation.source,
+    setSiteLocation,
+  ]);
+
+  useEffect(() => {
+    if (checkingAuth) {
+      return;
+    }
+
+    if (hasUser) {
+      if (!hasShownWelcomeRef.current) {
+        hasShownWelcomeRef.current = true;
+        setShowFreshLoginLoading(true);
+        if (welcomeLoadingTimeoutRef.current) {
+          clearTimeout(welcomeLoadingTimeoutRef.current);
+        }
+        welcomeLoadingTimeoutRef.current = setTimeout(() => {
+          setShowFreshLoginLoading(false);
+          welcomeLoadingTimeoutRef.current = null;
+        }, 1500);
+      }
+    } else {
+      hasShownWelcomeRef.current = false;
+      setShowFreshLoginLoading(false);
+      if (welcomeLoadingTimeoutRef.current) {
+        clearTimeout(welcomeLoadingTimeoutRef.current);
+        welcomeLoadingTimeoutRef.current = null;
+      }
+    }
+  }, [hasUser, checkingAuth]);
+
+  useEffect(() => {
+    if (checkingAuth) {
+      return;
+    }
+
+    if (!hasUser) {
+      setShowPageLoading(false);
+      return;
+    }
+
+    const currentRouteKey = `${pathname}?${searchParamsKey}`;
+
+    if (lastRouteKeyRef.current === null) {
+      lastRouteKeyRef.current = currentRouteKey;
+      return;
+    }
+
+    if (lastRouteKeyRef.current === currentRouteKey) {
+      return;
+    }
+
+    lastRouteKeyRef.current = currentRouteKey;
+    setShowPageLoading(true);
+
+    if (routeLoadingTimeoutRef.current) {
+      clearTimeout(routeLoadingTimeoutRef.current);
+    }
+
+    routeLoadingTimeoutRef.current = setTimeout(() => {
+      setShowPageLoading(false);
+      routeLoadingTimeoutRef.current = null;
+    }, 1000);
+  }, [pathname, searchParamsKey, hasUser, checkingAuth]);
 
   if (checkingAuth) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background text-muted-foreground">
-        Validating session...
-      </div>
-    );
+    return <Validating />;
+  }
+
+  if (hasUser && showFreshLoginLoading) {
+    return <Loading mode="welcome" />;
+  }
+
+  if (showPageLoading) {
+    return <Loading mode="page" />;
   }
 
   if (!hasUser) {
@@ -140,7 +253,6 @@ export function Layout({ children }: LayoutProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* <ThreeJSHeader /> */}
       <Navbar
         onMenuClick={() => setSidebarOpen(!sidebarOpen)}
         sidebarOpen={sidebarOpen}

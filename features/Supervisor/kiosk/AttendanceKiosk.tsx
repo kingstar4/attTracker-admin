@@ -46,36 +46,36 @@ export function AttendanceKiosk() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 px-4 py-6 dark:from-gray-900 dark:to-gray-800 sm:p-6">
+      <div className="mx-auto max-w-6xl space-y-6 sm:space-y-8">
         <KioskHeader onReset={resetKiosk} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2">
-            <Card className="min-h-[520px]">
-              <CardHeader className="text-center pb-4">
-                <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
-                  <Clock className="h-6 w-6" />
+            <Card className="h-full min-h-[460px] sm:min-h-[520px]">
+              <CardHeader className="pb-4 text-center">
+                <CardTitle className="flex items-center justify-center gap-2 text-2xl font-bold sm:text-3xl">
+                  <Clock className="h-6 w-6 sm:h-7 sm:w-7" />
                   Attendance Kiosk
                 </CardTitle>
-                <p className="text-muted-foreground">
+                <p className="text-sm text-muted-foreground sm:text-base">
                   Enter the employee ID, OTP code, and device IP to record attendance.
                 </p>
               </CardHeader>
 
-              <CardContent className="flex flex-col items-center gap-6">
+              <CardContent className="flex flex-col gap-6 lg:items-center">
                 <ClockInOutPanel
                   key={panelResetCounter}
                   onSuccess={({ employeeId, action }) => handleSubmissionSuccess({ employeeId, action })}
                 />
 
                 {lastAction && (
-                  <div className="w-full max-w-xl p-4 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
-                    <div className="flex items-center gap-2 text-green-800 dark:text-green-200">
+                  <div className="w-full max-w-xl rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
                       <CheckCircle className="h-5 w-5" />
                       <span className="font-medium">
                         {lastAction.employee} - {lastAction.action} recorded at{" "}
-                        {new Date(lastAction.timestamp).toLocaleTimeString()}
+                        {new Date(lastAction.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                       </span>
                     </div>
                   </div>
@@ -84,7 +84,7 @@ export function AttendanceKiosk() {
             </Card>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <RecentClockIns />
 
             <Card>
@@ -92,16 +92,16 @@ export function AttendanceKiosk() {
                 <CardTitle className="text-lg">Quick Stats</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Currently In</span>
+                <div className="flex items-center justify-between gap-2 text-sm">
+                  <span className="text-muted-foreground">Currently In</span>
                   <Badge variant="secondary">{currentlyIn}</Badge>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">On Break</span>
+                <div className="flex items-center justify-between gap-2 text-sm">
+                  <span className="text-muted-foreground">On Break</span>
                   <Badge variant="outline">{onBreak}</Badge>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Total Employees</span>
+                <div className="flex items-center justify-between gap-2 text-sm">
+                  <span className="text-muted-foreground">Total Employees</span>
                   <Badge>{employees.length}</Badge>
                 </div>
               </CardContent>

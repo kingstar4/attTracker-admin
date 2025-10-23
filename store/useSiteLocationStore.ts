@@ -18,7 +18,7 @@ const STORAGE_KEY = "attTracker.siteLocation"
 export const DEFAULT_SITE_LOCATION: SiteLocation = {
   lat: 6.565468, 
   lng: 3.259118,
-  radiusMeters: 500,
+  radiusMeters: 100,
   name: "Construction Site Alpha",
   source: "default",
 }
@@ -71,9 +71,28 @@ const readStoredSiteLocation = (): SiteLocation | null => {
   return parseStoredSiteLocation(storedValue)
 }
 
+const readStoredSupervisorSiteLocation = (): SiteLocation | null => {
+  const storedLocation = readStoredSiteLocation()
+  return storedLocation && storedLocation.source === "supervisor"
+    ? storedLocation
+    : null
+}
+
+const readStoredManualSiteLocation = (): SiteLocation | null => {
+  const storedLocation = readStoredSiteLocation()
+  return storedLocation && storedLocation.source === "manual"
+    ? storedLocation
+    : null
+}
+
 const loadInitialLocation = (): SiteLocation => {
   const storedLocation = readStoredSiteLocation()
-  if (storedLocation) {
+
+  if (storedLocation?.source === "supervisor") {
+    return storedLocation
+  }
+
+  if (storedLocation?.source === "manual") {
     return storedLocation
   }
 
@@ -111,17 +130,26 @@ export const useSiteLocationStore = create<SiteLocationState>((set) => ({
     set({ siteLocation: nextLocation })
   },
   resetSiteLocation: () => {
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem(STORAGE_KEY)
-    }
-    set({ siteLocation: DEFAULT_SITE_LOCATION })
+    set((state) => {
+      const supervisorLocation =
+        state.siteLocation.source === "supervisor"
+          ? state.siteLocation
+          : readStoredSupervisorSiteLocation()
+
+      if (typeof window !== "undefined") {
+        if (supervisorLocation) {
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(supervisorLocation))
+        } else {
+          window.localStorage.removeItem(STORAGE_KEY)
+        }
+      }
+
+      return {
+        siteLocation: supervisorLocation ?? DEFAULT_SITE_LOCATION,
+      }
+    })
   },
 }))
-
-const readStoredSupervisorSiteLocation = (): SiteLocation | null => {
-  const storedLocation = readStoredSiteLocation()
-  return storedLocation && storedLocation.source === "supervisor" ? storedLocation : null
-}
 
 export const getStoredSiteLocation = (): SiteLocation | null => readStoredSiteLocation()
 
@@ -133,6 +161,35 @@ export const getSupervisorSiteLocation = (): SiteLocation | null => {
   }
 
   return readStoredSupervisorSiteLocation()
+}
+
+export const getEffectiveSiteLocation = (): SiteLocation => {
+  const stateLocation = useSiteLocationStore.getState().siteLocation
+
+  if (stateLocation.source === "supervisor") {
+    return stateLocation
+  }
+
+  const supervisorLocation = readStoredSupervisorSiteLocation()
+  if (supervisorLocation) {
+    return supervisorLocation
+  }
+
+  if (stateLocation.source === "manual") {
+    return stateLocation
+  }
+
+  const storedManualLocation = readStoredManualSiteLocation()
+  if (storedManualLocation) {
+    return storedManualLocation
+  }
+
+  const storedLocation = readStoredSiteLocation()
+  if (storedLocation) {
+    return storedLocation
+  }
+
+  return DEFAULT_SITE_LOCATION
 }
 
 export const SITE_LOCATION_STORAGE_KEY = STORAGE_KEY

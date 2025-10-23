@@ -161,19 +161,6 @@ export function SupervisorDashboard() {
             </CardContent>
           </Card>
 
-          {/* Department Distribution */}
-          {/* <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Department Distribution
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <DepartmentChart employees={employees} />
-            </CardContent>
-          </Card> */}
-
           {/* Today's Attendance */}
           <TodayAttendance />
         </div>

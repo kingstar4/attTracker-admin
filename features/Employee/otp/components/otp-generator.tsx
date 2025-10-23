@@ -1,88 +1,113 @@
-"use client"
+"use client";
 
-import { useEffect, useMemo, useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { useGeolocation } from "@/hooks/use-geolocation"
-import { isWithinGeofence } from "@/lib/geofence"
-import { useToast } from "@/hooks/use-toast"
-import { KeyRound, MailCheck, MapPin, RefreshCw, WifiOff } from "lucide-react"
-import api from "@/lib/api"
-import { useAuthStore } from "@/store/useAuthStore"
-import { useSiteLocationStore } from "@/store/useSiteLocationStore"
-import { cn } from "@/lib/utils"
+import { useEffect, useMemo, useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { useGeolocation } from "@/hooks/use-geolocation";
+import { isWithinGeofence } from "@/lib/geofence";
+import { useToast } from "@/hooks/use-toast";
+import { KeyRound, MailCheck, MapPin, RefreshCw, WifiOff } from "lucide-react";
+import api from "@/lib/api";
+import { useAuthStore } from "@/store/useAuthStore";
+import { useSiteLocationStore } from "@/store/useSiteLocationStore";
+import { cn } from "@/lib/utils";
 
-const LOCKOUT_SECONDS = 60
+const LOCKOUT_SECONDS = 60;
 
 async function fetchPublicIp(): Promise<string | null> {
   try {
-    const response = await fetch("https://api.ipify.org?format=json")
+    const response = await fetch("https://api.ipify.org?format=json");
     if (!response.ok) {
-      throw new Error("Failed to fetch IP")
+      throw new Error("Failed to fetch IP");
     }
-    const data = await response.json()
-    return data.ip as string
+    const data = await response.json();
+    return data.ip as string;
   } catch (error) {
-    console.error("Unable to determine device IP", error)
-    return null
+    console.error("Unable to determine device IP", error);
+    return null;
   }
 }
 
 export function OTPGenerator() {
-  const userEmail = useAuthStore((state) => state.user?.email ?? null)
-  const siteLocation = useSiteLocationStore((state) => state.siteLocation)
-  const { latitude, longitude, error: locationError, loading: locationLoading } = useGeolocation()
-  const { toast } = useToast()
+  const userEmail = useAuthStore((state) => state.user?.email ?? null);
+  const siteLocation = useSiteLocationStore((state) => state.siteLocation);
+  const {
+    latitude,
+    longitude,
+    error: locationError,
+    loading: locationLoading,
+  } = useGeolocation();
+  const { toast } = useToast();
 
-  const [deviceIp, setDeviceIp] = useState<string>("")
-  const [ipError, setIpError] = useState<string | null>(null)
-  const [isFetchingIp, setIsFetchingIp] = useState(false)
-  const [isRequesting, setIsRequesting] = useState(false)
-  const [lockoutEnd, setLockoutEnd] = useState<number | null>(null)
-  const [lastRequestedAt, setLastRequestedAt] = useState<number | null>(null)
+  const [deviceIp, setDeviceIp] = useState<string>("");
+  const [ipError, setIpError] = useState<string | null>(null);
+  const [isFetchingIp, setIsFetchingIp] = useState(false);
+  const [isRequesting, setIsRequesting] = useState(false);
+  const [lockoutEnd, setLockoutEnd] = useState<number | null>(null);
+  const [lastRequestedAt, setLastRequestedAt] = useState<number | null>(null);
 
   const isWithinSite = useMemo(() => {
-    if (locationLoading || locationError || latitude === null || longitude === null) return false
-    return isWithinGeofence(latitude, longitude, siteLocation.lat, siteLocation.lng, siteLocation.radiusMeters)
-  }, [latitude, longitude, locationLoading, locationError, siteLocation])
+    if (
+      locationLoading ||
+      locationError ||
+      latitude === null ||
+      longitude === null
+    )
+      return false;
+    return isWithinGeofence(
+      latitude,
+      longitude,
+      siteLocation.lat,
+      siteLocation.lng,
+      siteLocation.radiusMeters
+    );
+  }, [latitude, longitude, locationLoading, locationError, siteLocation]);
 
   useEffect(() => {
-    let timer: number | undefined
+    let timer: number | undefined;
     if (lockoutEnd) {
       timer = window.setInterval(() => {
         if (lockoutEnd <= Date.now()) {
-          setLockoutEnd(null)
-          window.clearInterval(timer)
+          setLockoutEnd(null);
+          window.clearInterval(timer);
         }
-      }, 1000)
+      }, 1000);
     }
     return () => {
-      if (timer) window.clearInterval(timer)
-    }
-  }, [lockoutEnd])
+      if (timer) window.clearInterval(timer);
+    };
+  }, [lockoutEnd]);
 
   useEffect(() => {
     const initialiseIp = async () => {
-      setIsFetchingIp(true)
-      const ip = await fetchPublicIp()
+      setIsFetchingIp(true);
+      const ip = await fetchPublicIp();
       if (ip) {
-        setDeviceIp(ip)
-        setIpError(null)
+        setDeviceIp(ip);
+        setIpError(null);
       } else {
-        setIpError("Unable to detect device IP automatically. Please enter it manually.")
+        setIpError(
+          "Unable to detect device IP automatically. Please enter it manually."
+        );
       }
-      setIsFetchingIp(false)
-    }
+      setIsFetchingIp(false);
+    };
 
-    void initialiseIp()
-  }, [])
+    void initialiseIp();
+  }, []);
 
   const lockoutSecondsRemaining = useMemo(() => {
-    if (!lockoutEnd) return 0
-    return Math.max(0, Math.ceil((lockoutEnd - Date.now()) / 1000))
-  }, [lockoutEnd])
+    if (!lockoutEnd) return 0;
+    return Math.max(0, Math.ceil((lockoutEnd - Date.now()) / 1000));
+  }, [lockoutEnd]);
 
   const canRequestOtp =
     !!userEmail &&
@@ -91,16 +116,17 @@ export function OTPGenerator() {
     !locationError &&
     !!deviceIp &&
     !isRequesting &&
-    lockoutSecondsRemaining === 0
+    lockoutSecondsRemaining === 0;
 
   const handleRequestOtp = async () => {
     if (!userEmail) {
       toast({
         title: "Missing Email",
-        description: "We could not find your account email. Please re-login and try again.",
+        description:
+          "We could not find your account email. Please re-login and try again.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
     if (!deviceIp) {
@@ -108,39 +134,39 @@ export function OTPGenerator() {
         title: "Device IP required",
         description: "Enter the device IP to request an OTP.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    setIsRequesting(true)
+    setIsRequesting(true);
     try {
       await api.post("/auth/request-otp", {
         email: userEmail,
         device_ip: deviceIp,
-      })
+      });
 
-      setLockoutEnd(Date.now() + LOCKOUT_SECONDS * 1000)
-      setLastRequestedAt(Date.now())
+      setLockoutEnd(Date.now() + LOCKOUT_SECONDS * 1000);
+      setLastRequestedAt(Date.now());
 
       toast({
         title: "OTP Sent",
         description: `A one-time password has been emailed to ${userEmail}.`,
-      })
+      });
     } catch (error: any) {
       const message =
         error?.response?.data?.message ??
         error?.message ??
-        "Failed to request OTP. Please try again."
+        "Failed to request OTP. Please try again.";
 
       toast({
         title: "Request Failed",
         description: message,
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsRequesting(false)
+      setIsRequesting(false);
     }
-  }
+  };
 
   return (
     <Card>
@@ -150,7 +176,8 @@ export function OTPGenerator() {
           OTP Generator
         </CardTitle>
         <CardDescription>
-          Request a one-time password. The code will be delivered to your registered email address.
+          Request a one-time password. The code will be delivered to your
+          registered email address.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -184,7 +211,8 @@ export function OTPGenerator() {
               )}
             </div>
             <Input
-              placeholder="Enter or confirm your device IP"
+              placeholder="Confirm your device IP"
+              readOnly
               value={deviceIp}
               onChange={(event) => setDeviceIp(event.target.value)}
               disabled={isRequesting}
@@ -196,19 +224,23 @@ export function OTPGenerator() {
                 variant="ghost"
                 size="sm"
                 onClick={async () => {
-                  setIsFetchingIp(true)
-                  const ip = await fetchPublicIp()
+                  setIsFetchingIp(true);
+                  const ip = await fetchPublicIp();
                   if (ip) {
-                    setDeviceIp(ip)
-                    setIpError(null)
+                    setDeviceIp(ip);
+                    setIpError(null);
                   } else {
-                    setIpError("Automatic detection failed. Please enter the IP manually.")
+                    setIpError(
+                      "Automatic detection failed. Please enter the IP manually."
+                    );
                   }
-                  setIsFetchingIp(false)
+                  setIsFetchingIp(false);
                 }}
                 disabled={isFetchingIp || isRequesting}
               >
-                <RefreshCw className={cn("h-3 w-3 mr-2", isFetchingIp && "animate-spin")} />
+                <RefreshCw
+                  className={cn("h-3 w-3 mr-2", isFetchingIp && "animate-spin")}
+                />
                 Refresh IP
               </Button>
             </div>
@@ -222,23 +254,31 @@ export function OTPGenerator() {
             className="w-full gap-2"
             size="lg"
           >
-            {isRequesting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <MailCheck className="h-4 w-4" />}
+            {isRequesting ? (
+              <RefreshCw className="h-4 w-4 animate-spin" />
+            ) : (
+              <MailCheck className="h-4 w-4" />
+            )}
             Generate OTP
           </Button>
 
           {!isWithinSite && !locationLoading && !locationError && (
             <p className="text-xs text-destructive text-center">
-              You must be within the supervisor&apos;s geofence to request an OTP.
+              You must be within the supervisor&apos;s geofence to request an
+              OTP.
             </p>
           )}
 
           {locationLoading && (
-            <p className="text-xs text-muted-foreground text-center">Confirming your location...</p>
+            <p className="text-xs text-muted-foreground text-center">
+              Confirming your location...
+            </p>
           )}
 
           {locationError && (
             <p className="text-xs text-destructive text-center">
-              Location error: {locationError}. OTP requests are disabled until location is available.
+              Location error: {locationError}. OTP requests are disabled until
+              location is available.
             </p>
           )}
 
@@ -261,11 +301,12 @@ export function OTPGenerator() {
             Location Reminder
           </div>
           <p>
-            OTP requests are only allowed when you are physically present at <strong>{siteLocation.name}</strong>.
-            Ensure you share the received OTP code with your supervisor to complete attendance.
+            OTP requests are only allowed when you are physically present at{" "}
+            <strong>{siteLocation.name}</strong>. Ensure you share the received
+            OTP code with your supervisor to complete attendance.
           </p>
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

@@ -30,7 +30,7 @@ export default function EmployeeDashBoard() {
       <HeroSection />
       <StatsCards />
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <AttendanceChart />
         <PresencePieChart />
       </div>

@@ -93,6 +93,10 @@ const asNumber = (value: unknown): number | null => {
 export default function OwnerDashboard() {
   const { fetchAll, loading, stats, pendingLeaves, recentAttendance, error } =
     useOwnerDashboardStore();
+  const leaveRequests = useOwnerDashboardStore((state) => state.leaveRequests);
+  const pendingLeaveCount = useOwnerDashboardStore(
+    (state) => state.pendingLeaveCount
+  );
   const { user } = useAuthStore();
   const { role, setRole, setUser: setUserStore } = useUserStore();
 
@@ -173,12 +177,12 @@ export default function OwnerDashboard() {
         icon: <UserCog className="h-5 w-5" />,
       },
       {
-        title: "Pending Leave Requests",
-        value: stats?.pending_leave_requests ?? 0,
+        title: "Leave Requests",
+        value: pendingLeaveCount,
         icon: <CalendarClock className="h-5 w-5" />,
       },
     ],
-    [stats, supervisorCount, supervisorPending]
+    [stats, supervisorCount, supervisorPending, pendingLeaveCount]
   );
 
   return (
@@ -329,6 +333,100 @@ export default function OwnerDashboard() {
           )}
         </Card>
       </div>
+
+      <Card className="mt-6 p-4 sm:p-5">
+        <div className="mb-4">
+          <h3 className="text-sm font-semibold">All Leave Requests</h3>
+          <p className="text-xs text-muted-foreground">
+            Full history of recent leave requests with their approval status.
+          </p>
+        </div>
+        {loading && leaveRequests.length === 0 ? (
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-16" />
+            ))}
+          </div>
+        ) : leaveRequests.length > 0 ? (
+          <>
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-xs uppercase tracking-wide text-muted-foreground">
+                    <th className="py-2 pr-4 text-left font-medium">Employee</th>
+                    <th className="py-2 pr-4 text-left font-medium">Type</th>
+                    <th className="py-2 pr-4 text-left font-medium">Dates</th>
+                    <th className="py-2 pr-4 text-left font-medium">Status</th>
+                    <th className="py-2 pr-4 text-left font-medium">Submitted</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {leaveRequests.map((leave, index) => (
+                    <tr
+                      key={leave.id ?? `${leave.employee_name ?? "leave"}-${index}`}
+                      className="border-b last:border-0"
+                    >
+                      <td className="py-3 pr-4 font-medium">
+                        {leave.employee_name ?? "Unnamed employee"}
+                      </td>
+                      <td className="py-3 pr-4 text-muted-foreground">
+                        {leave.leave_type ?? "Leave"}
+                      </td>
+                      <td className="py-3 pr-4 text-muted-foreground">
+                        {leaveRange(leave)}
+                      </td>
+                      <td className="py-3 pr-4">
+                        <Badge variant={statusVariant(leave.status)}>
+                          {leave.status ?? "Pending"}
+                        </Badge>
+                      </td>
+                      <td className="py-3 pr-4 text-muted-foreground">
+                        {leave.created_at ? formatDate(leave.created_at, true) : "N/A"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="space-y-3 md:hidden">
+              {leaveRequests.map((leave, index) => (
+                <div
+                  key={leave.id ?? `${leave.employee_name ?? "leave"}-${index}`}
+                  className="rounded-lg border p-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-semibold">
+                        {leave.employee_name ?? "Unnamed employee"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {leave.leave_type ?? "Leave"} · {leaveRange(leave)}
+                      </p>
+                    </div>
+                    <Badge variant={statusVariant(leave.status)}>
+                      {leave.status ?? "Pending"}
+                    </Badge>
+                  </div>
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    Submitted:{" "}
+                    {leave.created_at ? formatDate(leave.created_at, true) : "N/A"}
+                  </p>
+                  {leave.reason ? (
+                    <p className="mt-2 text-xs text-muted-foreground line-clamp-3">
+                      {leave.reason}
+                    </p>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            No leave requests have been recorded yet.
+          </p>
+        )}
+      </Card>
     </div>
   );
 }

@@ -62,11 +62,37 @@ export function LeaveRequests() {
     }
   };
 
+  const renderActions = (requestId: string) => (
+    <div className="flex flex-wrap items-center gap-2">
+      <Button
+        size="sm"
+        className="flex items-center gap-1"
+        onClick={() => handleUpdateStatus(requestId, "approved")}
+        disabled={loading}
+      >
+        <CheckCircle className="h-4 w-4" />
+        Approve
+      </Button>
+      <Button
+        size="sm"
+        variant="destructive"
+        className="flex items-center gap-1"
+        onClick={() => handleUpdateStatus(requestId, "rejected")}
+        disabled={loading}
+      >
+        <XCircle className="h-4 w-4" />
+        Reject
+      </Button>
+    </div>
+  );
+
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Leave Requests</h1>
-        <p className="text-muted-foreground">Manage employee leave requests</p>
+    <div className="container mx-auto space-y-6 px-4 py-6 sm:px-6">
+      <div className="space-y-1">
+        <h1 className="text-2xl font-bold sm:text-3xl">Leave Requests</h1>
+        <p className="text-sm text-muted-foreground sm:text-base">
+          Manage employee leave requests
+        </p>
       </div>
 
       <Card>
@@ -76,75 +102,97 @@ export function LeaveRequests() {
             Review and manage leave requests from your employees
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Employee</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Period</TableHead>
-                <TableHead>Reason</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {leaveRequests.map((request) => (
-                <TableRow key={request.id}>
-                  <TableCell className="font-medium">
-                    {request.employee_name}
-                  </TableCell>
-                  <TableCell className="capitalize">{request.type}</TableCell>
-                  <TableCell>
-                    {format(new Date(request.start_date), "MMM d, yyyy")} -{" "}
-                    {format(new Date(request.end_date), "MMM d, yyyy")}
-                  </TableCell>
-                  <TableCell>{request.reason}</TableCell>
-                  <TableCell>
+        <CardContent className="space-y-4">
+          <div className="hidden overflow-x-auto md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Employee</TableHead>
+                  {/* <TableHead>Type</TableHead> */}
+                  <TableHead>Period</TableHead>
+                  <TableHead>Reason</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {leaveRequests.map((request) => (
+                  <TableRow key={request.id}>
+                    <TableCell className="font-medium">
+                      {request.employee_name}
+                    </TableCell>
+                    {/* <TableCell className="capitalize">{request.type}</TableCell> */}
+                    <TableCell>
+                      {format(new Date(request.start_date), "MMM d, yyyy")} -{" "}
+                      {format(new Date(request.end_date), "MMM d, yyyy")}
+                    </TableCell>
+                    <TableCell>{request.reason}</TableCell>
+                    <TableCell>
+                      <Badge className={getStatusColor(request.status)}>
+                        {request.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {request.status === "pending" ? (
+                        renderActions(request.id)
+                      ) : (
+                        <span className="text-sm text-muted-foreground">
+                          No actions available
+                        </span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {leaveRequests.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-6 text-center">
+                      No leave requests found
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="space-y-3 md:hidden">
+            {leaveRequests.length > 0 ? (
+              leaveRequests.map((request) => (
+                <div
+                  key={request.id}
+                  className="rounded-lg border border-border/70 bg-background p-4 shadow-sm"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-sm font-semibold">
+                      {request.employee_name}
+                    </p>
                     <Badge className={getStatusColor(request.status)}>
                       {request.status}
                     </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {request.status === "pending" && (
-                      <div className="flex items-center gap-2">
-                        <Button
-                          size="sm"
-                          className="flex items-center gap-1"
-                          onClick={() =>
-                            handleUpdateStatus(request.id, "approved")
-                          }
-                          disabled={loading}
-                        >
-                          <CheckCircle className="h-4 w-4" />
-                          Approve
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          className="flex items-center gap-1"
-                          onClick={() =>
-                            handleUpdateStatus(request.id, "rejected")
-                          }
-                          disabled={loading}
-                        >
-                          <XCircle className="h-4 w-4" />
-                          Reject
-                        </Button>
-                      </div>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {leaveRequests.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-6">
-                    No leave requests found
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                  </div>
+                  <dl className="mt-3 space-y-2 text-xs text-muted-foreground">
+                    <div className="flex justify-between gap-2">
+                      <dt className="font-medium text-foreground">Period</dt>
+                      <dd>
+                        {format(new Date(request.start_date), "MMM d, yyyy")} -{" "}
+                        {format(new Date(request.end_date), "MMM d, yyyy")}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="font-medium text-foreground">Reason</dt>
+                      <dd className="mt-1">{request.reason}</dd>
+                    </div>
+                  </dl>
+                  {request.status === "pending" ? (
+                    <div className="mt-3">{renderActions(request.id)}</div>
+                  ) : null}
+                </div>
+              ))
+            ) : (
+              <p className="text-center text-sm text-muted-foreground">
+                No leave requests found
+              </p>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>
