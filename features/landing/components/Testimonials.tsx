@@ -21,7 +21,7 @@ const testimonials = [
     content:
       "Managing multiple sites used to be a nightmare. Now I can see attendance across all projects instantly. The ROI was immediate.",
     rating: 4,
-    image: "/female-project-director-portrait.jpg",
+    image: "/female-project.jpeg",
   },
   {
     name: "James Thompson",
@@ -30,7 +30,7 @@ const testimonials = [
     content:
       "The kiosk mode is perfect for our sites. Workers love how easy it is to clock in, and I love the accurate data for payroll.",
     rating: 5,
-    image: "/site-supervisor-portrait.jpg",
+    image: "/superv.jpeg",
   },
 ];
 
@@ -120,7 +120,7 @@ export function Testimonials() {
           <p className="text-center text-sm text-muted-foreground mb-8 uppercase tracking-wider">
             Trusted by leading construction companies
           </p>
-          <div className="flex flex-wrap justify-center items-center gap-12 opacity-60">
+          <div className="flex flex-wrap justify-center items-center gap-12">
             {companies.map((company, index) => (
               <img
                 key={index}

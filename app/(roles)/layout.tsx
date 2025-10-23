@@ -4,6 +4,8 @@ import { GeistMono } from "geist/font/mono";
 import { Analytics } from "@vercel/analytics/next";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Layout } from "@/components/layout/Layout";
+import { Suspense } from "react";
+import Loading from "@/features/loading-state/Loading";
 // Global CSS is imported once at app/layout.tsx
 
 export const metadata: Metadata = {
@@ -28,7 +30,9 @@ export default function RoleLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <Layout>{children}</Layout>
+          <Suspense fallback={<Loading mode="page" />}>
+            <Layout>{children}</Layout>
+          </Suspense>
         </ThemeProvider>
         <Analytics />
       </div>
