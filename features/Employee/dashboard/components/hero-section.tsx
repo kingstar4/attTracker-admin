@@ -25,6 +25,30 @@ const normalizeStatus = (status: string): AttendanceStatus => {
   }
 };
 
+const toDateAtStartOfDay = (value: string) => {
+  if (!value) return null;
+  const candidate = value.includes("T")
+    ? new Date(value)
+    : new Date(`${value}T00:00:00`);
+  if (Number.isNaN(candidate.getTime())) {
+    return null;
+  }
+  candidate.setHours(0, 0, 0, 0);
+  return candidate;
+};
+
+const isDateWithinRange = (target: string, start: string, end?: string) => {
+  const targetDate = toDateAtStartOfDay(target);
+  const startDate = toDateAtStartOfDay(start);
+  const endDate = toDateAtStartOfDay(end ?? start);
+
+  if (!targetDate || !startDate || !endDate) {
+    return false;
+  }
+
+  return targetDate >= startDate && targetDate <= endDate;
+};
+
 const formatDate = (date: Date) =>
   date.toLocaleDateString("en-US", {
     weekday: "long",
@@ -57,7 +81,7 @@ const getStatusText = (status: AttendanceStatus | "unknown") => {
     case "late":
       return "Late";
     case "leave":
-      return "On Leave";
+      return "Leave";
     default:
       return "No record for today";
   }
@@ -67,7 +91,7 @@ export function HeroSection() {
   const {
     employee,
     attendanceRecords,
-    attendanceSummary,
+    leaveRequests,
     dashboardLoading,
     profileLoading,
     dashboardError,
@@ -100,18 +124,27 @@ export function HeroSection() {
     return null;
   }
 
-  const today = new Date().toISOString().split("T")[0];
-  const todayRecord = attendanceRecords.find((record) => record.date === today);
+  const today = new Date();
+  const todayIso = today.toISOString().split("T")[0];
+  const todayRecord = attendanceRecords.find(
+    (record) => record.date === todayIso
+  );
+
+  const isOnLeaveToday = leaveRequests.some(
+    (request) =>
+      request.status === "approved" &&
+      isDateWithinRange(todayIso, request.start_date, request.end_date)
+  );
 
   let currentStatus: AttendanceStatus | "unknown" = "unknown";
 
-  // First check today's record
-  if (todayRecord?.status) {
+  if (isOnLeaveToday) {
+    currentStatus = "leave";
+  } else if (todayRecord?.status) {
     currentStatus = normalizeStatus(todayRecord.status);
   } else {
     // If no record for today, check if it's within working hours
-    const now = new Date();
-    const hours = now.getHours();
+    const hours = today.getHours();
 
     // If it's during working hours (9 AM - 5 PM) and no record, mark as absent
     if (hours >= 9 && hours < 17) {

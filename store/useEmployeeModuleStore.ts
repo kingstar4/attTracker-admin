@@ -146,6 +146,65 @@ const extractArray = (value: unknown, depth = 0): unknown[] => {
   return []
 }
 
+const parseTimestamp = (value: string): number => {
+  const time = Date.parse(value)
+  return Number.isNaN(time) ? 0 : time
+}
+
+const buildLeaveRequestKey = (request: LeaveRequest): string => {
+  const normalisedId = (request.id ?? "").toLowerCase()
+  if (normalisedId && !normalisedId.startsWith("temp-")) {
+    return normalisedId
+  }
+
+  const start = (request.start_date ?? "").toLowerCase()
+  const end = (request.end_date ?? "").toLowerCase()
+  const reason = (request.reason ?? "").toLowerCase()
+
+  return `${normalisedId}|${start}|${end}|${reason}`
+}
+
+const mergeLeaveRequests = (
+  incoming: LeaveRequest[],
+  existing: LeaveRequest[],
+): LeaveRequest[] => {
+  const byKey = new Map<string, LeaveRequest>()
+
+  const push = (request: LeaveRequest, preferIncoming: boolean) => {
+    const key = buildLeaveRequestKey(request)
+    const current = byKey.get(key)
+
+    if (!current) {
+      byKey.set(key, request)
+      return
+    }
+
+    if (preferIncoming) {
+      byKey.set(key, request)
+      return
+    }
+
+    const currentTime = parseTimestamp(current.submittedAt)
+    const candidateTime = parseTimestamp(request.submittedAt)
+
+    if (candidateTime >= currentTime) {
+      byKey.set(key, request)
+    }
+  }
+
+  for (const request of incoming) {
+    push(request, true)
+  }
+
+  for (const request of existing) {
+    push(request, false)
+  }
+
+  return Array.from(byKey.values()).sort(
+    (a, b) => parseTimestamp(b.submittedAt) - parseTimestamp(a.submittedAt),
+  )
+}
+
 const safeMessage = (error: unknown): string => {
   if (typeof error === "string") return error
   if (error && typeof error === "object" && "message" in error) {
@@ -622,7 +681,27 @@ export const useEmployeeModuleStore = create<EmployeeState>()(
       },
 
       submitLeaveRequest: async (payload) => {
-        set({ leaveRequestSubmitting: true, leaveRequestsError: null })
+        const optimisticId = `temp-${Date.now()}`
+        const optimisticRequest: LeaveRequest = {
+          id: optimisticId,
+          start_date: safeString(payload.start_date),
+          end_date: safeString(payload.end_date),
+          reason: safeString(payload.reason),
+          status: "pending",
+          submittedAt: new Date().toISOString(),
+        }
+
+        set((state) => ({
+          leaveRequestSubmitting: true,
+          leaveRequestsError: null,
+          leaveRequests: [
+            optimisticRequest,
+            ...state.leaveRequests.filter(
+              (request) => request.id !== optimisticId,
+            ),
+          ],
+        }))
+
         try {
           const response = await api.post("/employee/leave-requests", payload)
           const data = response.data?.data ?? response.data ?? {}
@@ -668,9 +747,18 @@ export const useEmployeeModuleStore = create<EmployeeState>()(
               }
             })
 
-            set({
-              leaveRequests: requests,
-              leaveRequestSubmitting: false,
+            set((state) => {
+              const baseExisting =
+                requests.length > 0
+                  ? state.leaveRequests.filter(
+                      (request) => request.id !== optimisticId,
+                    )
+                  : state.leaveRequests
+
+              return {
+                leaveRequests: mergeLeaveRequests(requests, baseExisting),
+                leaveRequestSubmitting: false,
+              }
             })
           } else {
             const request = data as Record<string, unknown>
@@ -694,7 +782,12 @@ export const useEmployeeModuleStore = create<EmployeeState>()(
             }
 
             set((state) => ({
-              leaveRequests: [newRequest, ...state.leaveRequests],
+              leaveRequests: mergeLeaveRequests(
+                [newRequest],
+                state.leaveRequests.filter(
+                  (existingRequest) => existingRequest.id !== optimisticId,
+                ),
+              ),
               leaveRequestSubmitting: false,
             }))
           }
@@ -703,10 +796,13 @@ export const useEmployeeModuleStore = create<EmployeeState>()(
             ? "Network error: Unable to reach the server. Please check your connection and try again."
             : safeMessage((error as any)?.response?.data?.message ?? error)
 
-          set({
+          set((state) => ({
             leaveRequestSubmitting: false,
             leaveRequestsError: message,
-          })
+            leaveRequests: state.leaveRequests.filter(
+              (request) => request.id !== optimisticId,
+            ),
+          }))
 
           throw new Error(message)
         }
