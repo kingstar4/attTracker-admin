@@ -4,8 +4,15 @@ import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import api from "@/lib/api"
 
+// Centralised Zustand store that powers employee-facing dashboards, attendance,
+// and leave request flows. This file contains the core data models, helpers,
+// and async actions responsible for syncing employee data with the API.
+
 export type AttendanceStatus = "present" | "absent" | "late" | "leave"
 
+// ---- Data Models -----------------------------------------------------------
+
+// Normalised employee profile used throughout the employee experience.
 export interface EmployeeProfile {
   id: string
   firstName: string
@@ -27,6 +34,7 @@ export interface EmployeeProfile {
   supervisorPhone?: string
 }
 
+// Attendance snapshot for a specific calendar date.
 export interface AttendanceRecord {
   id: string
   date: string
@@ -36,6 +44,7 @@ export interface AttendanceRecord {
   notes?: string
 }
 
+// Employee leave request as provided by the API.
 export interface LeaveRequest {
   id: string
   start_date: string
@@ -45,12 +54,16 @@ export interface LeaveRequest {
   submittedAt: string
 }
 
+// Aggregated statistics displayed on the dashboard.
 export interface AttendanceSummary {
   attendancePercentage: number
   daysPresentThisMonth: number
   totalWorkingDays: number
 }
 
+// ---- Store State & Actions -------------------------------------------------
+
+// Signature of the Zustand slice used across employee pages.
 interface EmployeeState {
   employee: EmployeeProfile | null
   attendanceSummary: AttendanceSummary | null
@@ -86,6 +99,9 @@ interface EmployeeState {
   setSidebarCollapsed: (collapsed: boolean) => void
 }
 
+// ---- Helper Functions ------------------------------------------------------
+
+// Converts arbitrary backend status strings to the strictly typed union.
 const normaliseStatus = (value: unknown): AttendanceStatus => {
   const status = String(value ?? "").toLowerCase()
   switch (status) {
@@ -104,10 +120,12 @@ const normaliseStatus = (value: unknown): AttendanceStatus => {
   }
 }
 
+// Safely coerce any value to a string (fallback used throughout parsing).
 const safeString = (value: unknown): string => {
   return value === undefined || value === null ? "" : String(value)
 }
 
+// Normalise incoming date values into YYYY-MM-DD for easy comparisons.
 const normaliseDate = (value: unknown): string => {
   if (!value) return ""
   const date = new Date(value as string)
@@ -115,6 +133,7 @@ const normaliseDate = (value: unknown): string => {
   return date.toISOString().split("T")[0] ?? ""
 }
 
+// Recursively inspect nested API payloads to find an array of records.
 const extractArray = (value: unknown, depth = 0): unknown[] => {
   if (Array.isArray(value)) return value
   if (!value || typeof value !== "object" || depth >= 3) return []
@@ -146,11 +165,13 @@ const extractArray = (value: unknown, depth = 0): unknown[] => {
   return []
 }
 
+// Guards against invalid dates while comparing submissions.
 const parseTimestamp = (value: string): number => {
   const time = Date.parse(value)
   return Number.isNaN(time) ? 0 : time
 }
 
+// Generate a stable identifier used to merge duplicate leave responses.
 const buildLeaveRequestKey = (request: LeaveRequest): string => {
   const normalisedId = (request.id ?? "").toLowerCase()
   if (normalisedId && !normalisedId.startsWith("temp-")) {
@@ -164,6 +185,7 @@ const buildLeaveRequestKey = (request: LeaveRequest): string => {
   return `${normalisedId}|${start}|${end}|${reason}`
 }
 
+// Merge newly fetched leave requests with cached ones while deduplicating.
 const mergeLeaveRequests = (
   incoming: LeaveRequest[],
   existing: LeaveRequest[],
@@ -205,6 +227,7 @@ const mergeLeaveRequests = (
   )
 }
 
+// Derive a user-friendly error message when API calls fail.
 const safeMessage = (error: unknown): string => {
   if (typeof error === "string") return error
   if (error && typeof error === "object" && "message" in error) {
@@ -213,6 +236,7 @@ const safeMessage = (error: unknown): string => {
   return "Request failed"
 }
 
+// Detect network-level failures where axios may not supply a response.
 const isNetworkError = (error: unknown): boolean => {
   if (!error || typeof error !== "object") {
     return false
@@ -228,9 +252,12 @@ const isNetworkError = (error: unknown): boolean => {
   return message.includes("network") && message.includes("error")
 }
 
+// ---- Store Implementation --------------------------------------------------
+
 export const useEmployeeModuleStore = create<EmployeeState>()(
   persist(
     (set) => ({
+      // --- Initial observable state ---
       employee: null,
       attendanceSummary: null,
       attendanceRecords: [],
@@ -248,6 +275,7 @@ export const useEmployeeModuleStore = create<EmployeeState>()(
       profileLoading: false,
       profileError: null,
 
+      // --- Async actions: Dashboard & Profile ---
       fetchEmployeeDashboard: async () => {
         set({ dashboardLoading: true, dashboardError: null })
         try {
@@ -367,13 +395,16 @@ export const useEmployeeModuleStore = create<EmployeeState>()(
             },
           )
 
-          set({
+          set((state) => ({
             attendanceSummary,
             attendanceRecords,
-            leaveRequests: pendingLeaveRequests,
+            leaveRequests: mergeLeaveRequests(
+              pendingLeaveRequests,
+              state.leaveRequests,
+            ),
             dashboardLoading: false,
             dashboardError: null,
-          })
+          }))
         } catch (error) {
           set({
             dashboardLoading: false,
@@ -384,6 +415,7 @@ export const useEmployeeModuleStore = create<EmployeeState>()(
         }
       },
 
+      // --- Async actions: Profile details ---
       fetchEmployeeProfile: async () => {
         set({ profileLoading: true, profileError: null })
         try {
@@ -546,6 +578,7 @@ export const useEmployeeModuleStore = create<EmployeeState>()(
         }
       },
 
+      // --- Async actions: Attendance history range ---
       fetchAttendanceHistory: async (startDate, endDate) => {
         set({
           attendanceHistoryLoading: true,
@@ -622,6 +655,7 @@ export const useEmployeeModuleStore = create<EmployeeState>()(
         }
       },
 
+      // --- Async actions: Leave management ---
       fetchLeaveRequests: async () => {
         set({ leaveRequestsLoading: true, leaveRequestsError: null })
         try {
@@ -665,11 +699,16 @@ export const useEmployeeModuleStore = create<EmployeeState>()(
             }
           })
 
-          set({
-            leaveRequests: requests,
+          set((state) => ({
+            leaveRequests:
+              requests.length > 0
+                ? mergeLeaveRequests(requests, state.leaveRequests)
+                : state.leaveRequests.length > 0
+                  ? state.leaveRequests
+                  : [],
             leaveRequestsLoading: false,
             leaveRequestsError: null,
-          })
+          }))
         } catch (error) {
           set({
             leaveRequestsLoading: false,
@@ -681,6 +720,7 @@ export const useEmployeeModuleStore = create<EmployeeState>()(
       },
 
       submitLeaveRequest: async (payload) => {
+        // Optimistically add request so UI responds instantly while API resolves.
         const optimisticId = `temp-${Date.now()}`
         const optimisticRequest: LeaveRequest = {
           id: optimisticId,
@@ -703,6 +743,7 @@ export const useEmployeeModuleStore = create<EmployeeState>()(
         }))
 
         try {
+          // Persist to the backend and reconcile the response with cached data.
           const response = await api.post("/employee/leave-requests", payload)
           const data = response.data?.data ?? response.data ?? {}
 
@@ -782,6 +823,7 @@ export const useEmployeeModuleStore = create<EmployeeState>()(
             }
 
             set((state) => ({
+              // Merge server response, removing the optimistic entry if present.
               leaveRequests: mergeLeaveRequests(
                 [newRequest],
                 state.leaveRequests.filter(
@@ -808,6 +850,7 @@ export const useEmployeeModuleStore = create<EmployeeState>()(
         }
       },
 
+      // --- Synchronous setters & utilities ---
       setEmployee: (employee) => set({ employee }),
 
       addAttendanceRecord: (record) =>
@@ -817,7 +860,7 @@ export const useEmployeeModuleStore = create<EmployeeState>()(
 
       addLeaveRequest: (request) =>
         set((state) => ({
-          leaveRequests: [request, ...state.leaveRequests],
+          leaveRequests: mergeLeaveRequests([request], state.leaveRequests),
         })),
 
       toggleSidebar: () =>
@@ -827,6 +870,7 @@ export const useEmployeeModuleStore = create<EmployeeState>()(
     }),
     {
       name: "employee-storage",
+      // Persist only the identifying data we need between reloads.
       partialize: (state) => ({
         employee: state.employee,
         sidebarCollapsed: state.sidebarCollapsed,

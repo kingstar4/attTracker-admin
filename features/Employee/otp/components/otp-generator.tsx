@@ -111,9 +111,6 @@ export function OTPGenerator() {
 
   const canRequestOtp =
     !!userEmail &&
-    isWithinSite &&
-    !locationLoading &&
-    !locationError &&
     !!deviceIp &&
     !isRequesting &&
     lockoutSecondsRemaining === 0;
