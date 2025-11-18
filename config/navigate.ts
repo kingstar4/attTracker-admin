@@ -39,7 +39,7 @@ export const navigation = {
     { icon: Clock, label: "Attendance History", to: "/employee/attendance" },
     { icon: KeyRound, label: "OTP Fallback", to: "/employee/otp" },
     { icon: CalendarX2, label: "Leave", to: "/employee/leave-request" },
-    { icon: User, label: "Profile", to: "/employee/profile" },
+    // { icon: User, label: "Profile", to: "/employee/profile" },
     // { icon: Settings, label: "Settings", to: "/employee/settings" },
   ],
 }

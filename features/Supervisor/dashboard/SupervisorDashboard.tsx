@@ -21,14 +21,17 @@ import { EmployeeStatusList } from "./components/EmployeeStatusList";
 import { QuickActions } from "./components/QuickActions";
 import { AlertsPanel } from "./components/AlertsPanel";
 import { TodayAttendance } from "./components/TodayAttendance";
+import { useSupervisorProfileStore } from "@/store/useSupervisorProfileStore";
 
 export function SupervisorDashboard() {
   const { employees, fetchEmployees } = useEmployeeStore();
   const { attendanceRecords } = useAttendanceStore();
+  const { profile, fetchProfile } = useSupervisorProfileStore();
   const { user } = useAuthStore();
 
   useEffect(() => {
     fetchEmployees();
+    fetchProfile();
   }, [fetchEmployees]);
 
   const activeEmployees = employees.filter((emp) => emp.is_active).length;
@@ -100,7 +103,7 @@ export function SupervisorDashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">
-            Welcome, {user?.firstName || "Supervisor"}
+            Welcome, {profile?.first_name || "Supervisor"}
           </h1>
           <p className="text-muted-foreground flex items-center gap-2">
             <Calendar className="h-4 w-4" />

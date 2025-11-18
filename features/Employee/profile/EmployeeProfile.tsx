@@ -137,11 +137,11 @@ export function EmployeeProfile({ employeeId }: Props) {
               Employment Details
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-7">
             <InfoRow label="Role" value={employee.role} />
             <InfoRow label="Employee ID" value={employee.id} />
             <InfoRow label="Organization ID" value={employee.organizationId} />
-            <InfoRow label="NIN" value={employee.nin} />
+            {/* <InfoRow label="NIN" value={employee.nin} /> */}
             <InfoRow
               label="Date Joined"
               value={
