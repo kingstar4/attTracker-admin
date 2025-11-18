@@ -94,6 +94,9 @@ export default function OwnerDashboard() {
   const { fetchAll, loading, stats, pendingLeaves, recentAttendance, error } =
     useOwnerDashboardStore();
   const leaveRequests = useOwnerDashboardStore((state) => state.leaveRequests);
+  const supervisorLeaveRequests = useOwnerDashboardStore(
+    (state) => state.supervisorLeaveRequests
+  );
   const pendingLeaveCount = useOwnerDashboardStore(
     (state) => state.pendingLeaveCount
   );
@@ -353,17 +356,23 @@ export default function OwnerDashboard() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b text-xs uppercase tracking-wide text-muted-foreground">
-                    <th className="py-2 pr-4 text-left font-medium">Employee</th>
+                    <th className="py-2 pr-4 text-left font-medium">
+                      Employee
+                    </th>
                     <th className="py-2 pr-4 text-left font-medium">Type</th>
                     <th className="py-2 pr-4 text-left font-medium">Dates</th>
                     <th className="py-2 pr-4 text-left font-medium">Status</th>
-                    <th className="py-2 pr-4 text-left font-medium">Submitted</th>
+                    <th className="py-2 pr-4 text-left font-medium">
+                      Submitted
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {leaveRequests.map((leave, index) => (
                     <tr
-                      key={leave.id ?? `${leave.employee_name ?? "leave"}-${index}`}
+                      key={
+                        leave.id ?? `${leave.employee_name ?? "leave"}-${index}`
+                      }
                       className="border-b last:border-0"
                     >
                       <td className="py-3 pr-4 font-medium">
@@ -381,7 +390,9 @@ export default function OwnerDashboard() {
                         </Badge>
                       </td>
                       <td className="py-3 pr-4 text-muted-foreground">
-                        {leave.created_at ? formatDate(leave.created_at, true) : "N/A"}
+                        {leave.created_at
+                          ? formatDate(leave.created_at, true)
+                          : "N/A"}
                       </td>
                     </tr>
                   ))}
@@ -410,7 +421,9 @@ export default function OwnerDashboard() {
                   </div>
                   <p className="mt-3 text-xs text-muted-foreground">
                     Submitted:{" "}
-                    {leave.created_at ? formatDate(leave.created_at, true) : "N/A"}
+                    {leave.created_at
+                      ? formatDate(leave.created_at, true)
+                      : "N/A"}
                   </p>
                   {leave.reason ? (
                     <p className="mt-2 text-xs text-muted-foreground line-clamp-3">
@@ -424,6 +437,140 @@ export default function OwnerDashboard() {
         ) : (
           <p className="text-sm text-muted-foreground">
             No leave requests have been recorded yet.
+          </p>
+        )}
+      </Card>
+
+      <Card className="mt-6 p-4 sm:p-5">
+        <div className="mb-4">
+          <h3 className="text-sm font-semibold">Supervisor Leave Oversight</h3>
+          <p className="text-xs text-muted-foreground">
+            Every leave request mapped to the supervisor responsible for it.
+          </p>
+        </div>
+        {loading && supervisorLeaveRequests.length === 0 ? (
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-16" />
+            ))}
+          </div>
+        ) : supervisorLeaveRequests.length > 0 ? (
+          <>
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-xs uppercase tracking-wide text-muted-foreground">
+                    <th className="py-2 pr-4 text-left font-medium">
+                      Supervisor
+                    </th>
+                    <th className="py-2 pr-4 text-left font-medium">
+                      Employee
+                    </th>
+                    <th className="py-2 pr-4 text-left font-medium">Reason</th>
+                    <th className="py-2 pr-4 text-left font-medium">Dates</th>
+                    <th className="py-2 pr-4 text-left font-medium">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {supervisorLeaveRequests.map((leave, index) => (
+                    <tr
+                      key={
+                        leave.id ?? `${leave.employee_name ?? "leave"}-${index}`
+                      }
+                      className="border-b last:border-0"
+                    >
+                      <td className="py-3 pr-4">
+                        <p className="font-medium">
+                          {leave.supervisor_name ?? "Unknown supervisor"}
+                        </p>
+                        {leave.supervisor_email ? (
+                          <p className="text-xs text-muted-foreground">
+                            {leave.supervisor_email}
+                          </p>
+                        ) : null}
+                      </td>
+                      <td className="py-3 pr-4">
+                        <p className="font-medium">
+                          {leave.employee_name ?? "Unnamed employee"}
+                        </p>
+                        {leave.employee_email ? (
+                          <p className="text-xs text-muted-foreground">
+                            {leave.employee_email}
+                          </p>
+                        ) : null}
+                      </td>
+                      <td className="py-3 pr-4 text-muted-foreground">
+                        {leave.reason ?? leave.leave_type ?? "Leave"}
+                      </td>
+                      <td className="py-3 pr-4 text-muted-foreground">
+                        {leaveRange(leave)}
+                      </td>
+                      <td className="py-3 pr-4">
+                        <div className="flex flex-col gap-1">
+                          <Badge
+                            variant={statusVariant(leave.status)}
+                            className="w-fit"
+                          >
+                            {leave.status ?? "Pending"}
+                          </Badge>
+                          {leave.approved_at ? (
+                            <span className="text-[11px] text-muted-foreground">
+                              Updated {formatDate(leave.approved_at, true)}
+                            </span>
+                          ) : null}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="space-y-3 md:hidden">
+              {supervisorLeaveRequests.map((leave, index) => (
+                <div
+                  key={leave.id ?? `${leave.employee_name ?? "leave"}-${index}`}
+                  className="rounded-lg border p-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-semibold">
+                        {leave.supervisor_name ?? "Unknown supervisor"}
+                      </p>
+                      {leave.supervisor_email ? (
+                        <p className="text-xs text-muted-foreground">
+                          {leave.supervisor_email}
+                        </p>
+                      ) : null}
+                    </div>
+                    <Badge variant={statusVariant(leave.status)}>
+                      {leave.status ?? "Pending"}
+                    </Badge>
+                  </div>
+                  <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+                    <p>
+                      Employee:{" "}
+                      <span className="font-medium text-foreground">
+                        {leave.employee_name ?? "Unnamed"}
+                      </span>
+                    </p>
+                    {leave.employee_email ? (
+                      <p>{leave.employee_email}</p>
+                    ) : null}
+                    <p>Dates: {leaveRange(leave)}</p>
+                    {leave.reason ? <p>Reason: {leave.reason}</p> : null}
+                    {leave.approved_at ? (
+                      <p>Updated {formatDate(leave.approved_at, true)}</p>
+                    ) : null}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Supervisor-specific leave data will appear once submissions are
+            recorded.
           </p>
         )}
       </Card>

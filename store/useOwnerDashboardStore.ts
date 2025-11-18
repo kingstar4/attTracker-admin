@@ -14,12 +14,18 @@ export interface OrganizationStats {
 export interface PendingLeave {
   id?: string
   employee_name?: string
+  employee_id?: string
+  employee_email?: string
   leave_type?: string
   start_date?: string
   end_date?: string
   status?: string
   reason?: string
   created_at?: string
+  approved_at?: string
+  supervisor_id?: string
+  supervisor_name?: string
+  supervisor_email?: string
   [key: string]: unknown
 }
 
@@ -40,6 +46,7 @@ interface OwnerDashboardState {
   stats: OrganizationStats | null
   pendingLeaves: PendingLeave[]
   leaveRequests: PendingLeave[]
+  supervisorLeaveRequests: PendingLeave[]
   recentAttendance: AttendanceRecord[]
   pendingLeaveCount: number
   fetchAll: () => Promise<void>
@@ -58,6 +65,7 @@ export const useOwnerDashboardStore = create<OwnerDashboardState>((set) => ({
   stats: null,
   pendingLeaves: [],
   leaveRequests: [],
+  supervisorLeaveRequests: [],
   recentAttendance: [],
   pendingLeaveCount: 0,
 
@@ -104,6 +112,20 @@ export const useOwnerDashboardStore = create<OwnerDashboardState>((set) => ({
               record.user_name ??
               "",
           ),
+          employee_id: safeString(
+            record.employee_id ??
+              record.employeeId ??
+              record.staff_id ??
+              record.staffId ??
+              "",
+          ),
+          employee_email: safeString(
+            record.employee_email ??
+              record.email ??
+              record.employeeEmail ??
+              record.staff_email ??
+              "",
+          ),
           leave_type: safeString(
             record.leave_type ??
               record.type ??
@@ -136,6 +158,34 @@ export const useOwnerDashboardStore = create<OwnerDashboardState>((set) => ({
               record.submitted_at ??
               "",
           ),
+          approved_at: safeString(
+            record.approved_at ??
+              record.approvedAt ??
+              record.approved_on ??
+              record.resolved_at ??
+              "",
+          ),
+          supervisor_id: safeString(
+            record.supervisor_id ??
+              record.supervisorId ??
+              record.manager_id ??
+              record.managerId ??
+              "",
+          ),
+          supervisor_name: safeString(
+            record.supervisor_name ??
+              record.supervisor ??
+              record.manager_name ??
+              record.manager ??
+              "",
+          ),
+          supervisor_email: safeString(
+            record.supervisor_email ??
+              record.supervisorEmail ??
+              record.manager_email ??
+              record.managerEmail ??
+              "",
+          ),
         }
       }
 
@@ -144,9 +194,17 @@ export const useOwnerDashboardStore = create<OwnerDashboardState>((set) => ({
         return source.map((item, index) => toLeaveRecord(item, index))
       }
 
+      const supervisorLeaveRequests = resolveLeaveArray(payload.all_leave_requests)
+
+      const leaveRequestsSource = resolveLeaveArray(payload.leave_requests)
+      const recentLeaveRequests = resolveLeaveArray(payload.recent_leave_requests)
+
       const leaveRequestsRaw =
-        resolveLeaveArray(payload.leave_requests) ??
-        resolveLeaveArray(payload.recent_leave_requests)
+        supervisorLeaveRequests.length > 0
+          ? supervisorLeaveRequests
+          : leaveRequestsSource.length > 0
+            ? leaveRequestsSource
+            : recentLeaveRequests
 
       const pendingLeavesRaw = resolveLeaveArray(payload.pending_leaves)
       const leaveRequests =
@@ -180,6 +238,7 @@ export const useOwnerDashboardStore = create<OwnerDashboardState>((set) => ({
         stats: statsSource ?? defaultStats,
         pendingLeaves,
         leaveRequests,
+        supervisorLeaveRequests,
         recentAttendance: Array.isArray(payload.recent_attendance)
           ? payload.recent_attendance
           : [],
@@ -196,6 +255,7 @@ export const useOwnerDashboardStore = create<OwnerDashboardState>((set) => ({
         stats: defaultStats,
         pendingLeaves: [],
         leaveRequests: [],
+        supervisorLeaveRequests: [],
         recentAttendance: [],
         pendingLeaveCount: 0,
         loading: false,

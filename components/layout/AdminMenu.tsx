@@ -19,6 +19,16 @@ export function AdminMenu() {
 
   if (!user) return null;
 
+  const normalizedRole =
+    typeof user.role === "string" ? user.role.toLowerCase() : "employee";
+
+  const profilePath =
+    normalizedRole === "owner"
+      ? "/owner/profile"
+      : normalizedRole === "supervisor"
+        ? "/supervisor/profile"
+        : "/employee/profile";
+
   const handleLogout = () => {
     logout();
     router.push("/login");
@@ -36,14 +46,14 @@ export function AdminMenu() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
-        <DropdownMenuItem onClick={() => router.push("/employee/profile")}>
+        <DropdownMenuItem onClick={() => router.push(profilePath)}>
           <User className="mr-2 h-4 w-4" />
           <span>Profile</span>
         </DropdownMenuItem>
-        <DropdownMenuItem>
+        {/* <DropdownMenuItem>
           <Settings className="mr-2 h-4 w-4" />
           <span>Account Settings</span>
-        </DropdownMenuItem>
+        </DropdownMenuItem> */}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
